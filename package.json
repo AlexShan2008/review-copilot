@@ -9,8 +9,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "ts-node -r dotenv/config src/cli/index.ts",
-    "test": "jest",
-    "test:watch": "jest --watch",
+    "test": "jest --config jest.config.ts",
+    "test:watch": "jest --config jest.config.ts --watch",
     "lint": "eslint 'src/**/*.{js,ts}'",
     "format": "prettier --write 'src/**/*.{js,ts}'",
     "prepare": "husky install",

@@ -20,6 +20,11 @@ program
   .command('review')
   .description('Review code changes')
   .option('-c, --config <path>', 'Path to config file', '.reviewai.yaml')
-  .action(reviewCommand);
+  .action(async (options) => {
+    const success = await reviewCommand(options);
+    if (!success) {
+      process.exit(1);
+    }
+  });
 
 program.parse(); 

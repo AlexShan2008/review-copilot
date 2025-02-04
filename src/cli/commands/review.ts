@@ -10,7 +10,7 @@ interface ReviewCommandOptions {
   config: string;
 }
 
-export async function reviewCommand(options: ReviewCommandOptions): Promise<void> {
+export async function reviewCommand(options: ReviewCommandOptions): Promise<boolean> {
   const spinner = ora('Starting code review...').start();
 
   try {
@@ -26,7 +26,7 @@ export async function reviewCommand(options: ReviewCommandOptions): Promise<void
     
     if (!changes.length) {
       spinner.info(chalk.yellow('No changes to review.'));
-      return;
+      return true;
     }
 
     spinner.text = 'Analyzing changes...';
@@ -79,10 +79,11 @@ export async function reviewCommand(options: ReviewCommandOptions): Promise<void
     // Display results
     spinner.stop();
     displayResults(results);
+    return true;
 
   } catch (error) {
     spinner.fail(chalk.red('Review failed'));
-    process.exit(1);
+    return false;
   }
 }
 
