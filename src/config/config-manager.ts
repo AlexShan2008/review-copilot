@@ -5,7 +5,6 @@ import { Config } from '../types';
 
 const configSchema = z.object({
   ai: z.object({
-    name: z.string(),
     provider: z.string(),
     apiKey: z.string(),
     model: z.string(),
@@ -55,11 +54,35 @@ export class ConfigManager {
     return ConfigManager.instance;
   }
 
+  private replaceEnvVariables(obj: any): any {
+    if (typeof obj === 'string') {
+      return obj.replace(/\${([^}]+)}/g, (_, key) => process.env[key] || '');
+    }
+    
+    if (Array.isArray(obj)) {
+      return obj.map(item => this.replaceEnvVariables(item));
+    }
+    
+    if (typeof obj === 'object' && obj !== null) {
+      const result: any = {};
+      for (const [key, value] of Object.entries(obj)) {
+        result[key] = this.replaceEnvVariables(value);
+      }
+      return result;
+    }
+    
+    return obj;
+  }
+
   public async loadConfig(path: string = '.reviewai.yaml'): Promise<Config> {
     try {
       const configFile = await readFile(path, 'utf8');
       const parsedConfig = parse(configFile);
-      const validatedConfig = configSchema.parse(parsedConfig);
+      
+      // Replace environment variables before validation
+      const configWithEnv = this.replaceEnvVariables(parsedConfig);
+      
+      const validatedConfig = configSchema.parse(configWithEnv);
       this.config = validatedConfig as Config;
       return this.config;
     } catch (error) {

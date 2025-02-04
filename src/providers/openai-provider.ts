@@ -13,7 +13,7 @@ export class OpenAIProvider {
   async review(prompt: string, content: string): Promise<string> {
     try {
       const response = await this.client.chat.completions.create({
-        model: 'gpt-4',
+        model: 'gpt-3.5-turbo', // Changed from gpt-4 to gpt-3.5-turbo
         messages: [
           {
             role: 'system',

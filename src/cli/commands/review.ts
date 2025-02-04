@@ -14,15 +14,14 @@ export async function reviewCommand(options: ReviewCommandOptions): Promise<void
   const spinner = ora('Starting code review...').start();
 
   try {
-    // Load configuration
     const configManager = ConfigManager.getInstance();
     await configManager.loadConfig(options.config);
     const config = configManager.getConfig();
 
-    // Initialize AI provider
+    spinner.text = 'Initializing AI provider...';
     const aiProvider = new OpenAIProvider(config.ai);
 
-    // Get git changes
+    spinner.text = 'Getting git changes...';
     const changes = await getGitChanges();
     
     if (!changes.length) {
@@ -83,7 +82,6 @@ export async function reviewCommand(options: ReviewCommandOptions): Promise<void
 
   } catch (error) {
     spinner.fail(chalk.red('Review failed'));
-    console.error(error);
     process.exit(1);
   }
 }

@@ -8,7 +8,7 @@ const defaultConfig = `# AI Provider Configuration
 ai:
   provider: openai
   apiKey: \${OPENAI_API_KEY}
-  model: gpt-4
+  model: gpt-3.5-turbo
 
 # Review Triggers
 triggers:
@@ -20,7 +20,7 @@ triggers:
 rules:
   commitMessage:
     enabled: true
-    pattern: "^(feat|fix|docs|style|refactor|test|chore)(\\(.+\\))?: .{1,50}"
+    pattern: '^(feat|fix|docs|style|refactor|test|chore)(?:\([^)]+\))?: .{1,50}'
     prompt: |
       Review this commit message and ensure it follows conventional commits format.
       Format: <type>(<scope>): <description>
@@ -28,7 +28,7 @@ rules:
 
   branchName:
     enabled: true
-    pattern: "^(feature|bugfix|hotfix|release)/[A-Z]+-[0-9]+-.+"
+    pattern: '^(feature|bugfix|hotfix|release)/[A-Z]+-[0-9]+-.+'
     prompt: |
       Verify branch name follows the pattern:
       <type>/<ticket-id>-<description>
