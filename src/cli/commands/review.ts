@@ -3,7 +3,7 @@ import ora from 'ora';
 import { ConfigManager } from '../../config/config-manager';
 import { OpenAIProvider } from '../../providers/openai-provider';
 import { ReviewResult } from '../../types';
-import { getGitChanges } from '../../utils/git';
+import { getGitChanges, getCurrentBranchName, getCurrentCommitMessage } from '../../utils/git';
 
 
 interface ReviewCommandOptions {
@@ -108,15 +108,4 @@ function displayResults(results: ReviewResult[]): void {
 
     console.log(''); // Empty line for readability
   });
-}
-
-// Git utility functions (to be implemented in utils/git.ts)
-async function getCurrentCommitMessage(): Promise<string> {
-  // Implementation needed
-  return '';
-}
-
-async function getCurrentBranchName(): Promise<string> {
-  // Implementation needed
-  return '';
 } 

@@ -1,4 +1,5 @@
 import simpleGit, { SimpleGit } from 'simple-git';
+import chalk from 'chalk';
 
 interface GitChange {
   file: string;
@@ -22,13 +23,37 @@ export async function getGitChanges(): Promise<GitChange[]> {
 }
 
 export async function getCurrentBranchName(): Promise<string> {
-  const git: SimpleGit = simpleGit();
-  const branch = await git.branch();
-  return branch.current;
+  try {
+    const git: SimpleGit = simpleGit();
+    const branch = await git.branch();
+    
+    if (!branch.current) {
+      console.warn(chalk.yellow('Warning: Could not determine current branch name'));
+      return '';
+    }
+
+    console.log(chalk.blue('Current branch:'), chalk.green(branch.current));
+    return branch.current;
+  } catch (error) {
+    console.error(chalk.red('Error getting branch name:'), error);
+    throw new Error(`Failed to get branch name: ${error}`);
+  }
 }
 
 export async function getCurrentCommitMessage(): Promise<string> {
-  const git: SimpleGit = simpleGit();
-  const log = await git.log({ maxCount: 1 });
-  return log.latest?.message || '';
+  try {
+    const git: SimpleGit = simpleGit();
+    const log = await git.log({ maxCount: 1 });
+    
+    if (!log.latest?.message) {
+      console.warn(chalk.yellow('Warning: No commit message found'));
+      return '';
+    }
+
+    console.log(chalk.blue('Current commit message:'), chalk.green(log.latest.message));
+    return log.latest.message;
+  } catch (error) {
+    console.error(chalk.red('Error getting commit message:'), error);
+    throw new Error(`Failed to get commit message: ${error}`);
+  }
 } 
