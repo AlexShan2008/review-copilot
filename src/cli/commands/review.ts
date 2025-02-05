@@ -79,10 +79,36 @@ export async function reviewCommand(options: ReviewCommandOptions): Promise<bool
     // Display results
     spinner.stop();
     displayResults(results);
+
+    console.log('Config:', config);
+    console.log('Changes:', changes);
+    console.log('Review result:', results);
+
     return true;
 
   } catch (error) {
     spinner.fail(chalk.red('Review failed'));
+    
+    if (error instanceof Error) {
+      console.error(chalk.red('\nError details:'));
+      console.error(chalk.yellow('Message:'), error.message);
+      
+      const errorObj = JSON.parse(error.message.split('Details: ')[1] || '{}');
+      if (errorObj.error) {
+        console.error(chalk.yellow('\nOpenAI Error:'));
+        console.error(chalk.gray('Type:'), errorObj.error.type);
+        console.error(chalk.gray('Code:'), errorObj.error.code);
+        console.error(chalk.gray('Message:'), errorObj.error.message);
+      }
+
+      if (error.stack) {
+        console.error(chalk.gray('\nStack trace:'));
+        console.error(chalk.gray(error.stack));
+      }
+    } else {
+      console.error(chalk.red('\nUnknown error:'), error);
+    }
+    
     return false;
   }
 }
