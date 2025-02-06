@@ -1,16 +1,21 @@
 import chalk from 'chalk';
 import ora from 'ora';
 import { ConfigManager } from '../../config/config-manager';
-import { OpenAIProvider } from '../../providers/openai-provider';
-import { ReviewResult } from '../../types';
-import { getGitChanges, getCurrentBranchName, getCurrentCommitMessage } from '../../utils/git';
-
+import { AIProviderFactory } from '../../providers/ai-provider-factory';
+import { ReviewResult, AIProviderType } from '../../types';
+import {
+  getGitChanges,
+  getCurrentBranchName,
+  getCurrentCommitMessage,
+} from '../../utils/git';
 
 interface ReviewCommandOptions {
   config: string;
 }
 
-export async function reviewCommand(options: ReviewCommandOptions): Promise<boolean> {
+export async function reviewCommand(
+  options: ReviewCommandOptions,
+): Promise<boolean> {
   const spinner = ora('Starting code review...').start();
 
   try {
@@ -19,11 +24,16 @@ export async function reviewCommand(options: ReviewCommandOptions): Promise<bool
     const config = configManager.getConfig();
 
     spinner.text = 'Initializing AI provider...';
-    const aiProvider = new OpenAIProvider(config.ai);
+    const aiProvider = AIProviderFactory.createProvider({
+      provider: config.ai.provider as AIProviderType,
+      apiKey: config.ai.apiKey,
+      baseURL: config.ai.baseURL,
+      model: config.ai.model,
+    });
 
     spinner.text = 'Getting git changes...';
     const changes = await getGitChanges();
-    
+
     if (!changes.length) {
       spinner.info(chalk.yellow('No changes to review.'));
       return true;
@@ -34,47 +44,47 @@ export async function reviewCommand(options: ReviewCommandOptions): Promise<bool
     const results: ReviewResult[] = [];
 
     // Review commit message if enabled
-    if (config.rules.commitMessage.enabled) {
-      const commitMessage = await getCurrentCommitMessage();
-      const result = await aiProvider.review(
-        config.rules.commitMessage.prompt,
-        commitMessage
-      );
-      results.push({
-        success: !result.includes('ERROR'),
-        message: 'Commit Message Review',
-        suggestions: [result]
-      });
-    }
+    // if (config.rules.commitMessage.enabled) {
+    //   const commitMessage = await getCurrentCommitMessage();
+    //   const result = await aiProvider.review(
+    //     config.rules.commitMessage.prompt,
+    //     commitMessage,
+    //   );
+    //   results.push({
+    //     success: !result.includes('ERROR'),
+    //     message: 'Commit Message Review',
+    //     suggestions: [result],
+    //   });
+    // }
 
     // Review branch name if enabled
     if (config.rules.branchName.enabled) {
       const branchName = await getCurrentBranchName();
       const result = await aiProvider.review(
         config.rules.branchName.prompt,
-        branchName
+        branchName,
       );
       results.push({
         success: !result.includes('ERROR'),
         message: 'Branch Name Review',
-        suggestions: [result]
+        suggestions: [result],
       });
     }
 
     // Review code changes if enabled
-    if (config.rules.codeReview.enabled) {
-      for (const change of changes) {
-        const result = await aiProvider.review(
-          config.rules.codeReview.prompt,
-          change.content
-        );
-        results.push({
-          success: !result.includes('ERROR'),
-          message: `Code Review: ${change.file}`,
-          suggestions: [result]
-        });
-      }
-    }
+    // if (config.rules.codeReview.enabled) {
+    //   for (const change of changes) {
+    //     const result = await aiProvider.review(
+    //       config.rules.codeReview.prompt,
+    //       change.content,
+    //     );
+    //     results.push({
+    //       success: !result.includes('ERROR'),
+    //       message: `Code Review: ${change.file}`,
+    //       suggestions: [result],
+    //     });
+    //   }
+    // }
 
     // Display results
     spinner.stop();
@@ -85,14 +95,13 @@ export async function reviewCommand(options: ReviewCommandOptions): Promise<bool
     console.log('Review result:', results);
 
     return true;
-
   } catch (error) {
     spinner.fail(chalk.red('Review failed'));
-    
+
     if (error instanceof Error) {
       console.error(chalk.red('\nError details:'));
       console.error(chalk.yellow('Message:'), error.message);
-      
+
       const errorObj = JSON.parse(error.message.split('Details: ')[1] || '{}');
       if (errorObj.error) {
         console.error(chalk.yellow('\nOpenAI Error:'));
@@ -108,7 +117,7 @@ export async function reviewCommand(options: ReviewCommandOptions): Promise<bool
     } else {
       console.error(chalk.red('\nUnknown error:'), error);
     }
-    
+
     return false;
   }
 }
@@ -119,7 +128,7 @@ function displayResults(results: ReviewResult[]): void {
   results.forEach((result) => {
     const icon = result.success ? '✅' : '❌';
     console.log(`${icon} ${chalk.bold(result.message)}`);
-    
+
     if (result.suggestions?.length) {
       result.suggestions.forEach((suggestion) => {
         console.log(chalk.gray('  └─ ') + suggestion);
@@ -134,4 +143,4 @@ function displayResults(results: ReviewResult[]): void {
 
     console.log(''); // Empty line for readability
   });
-} 
+}

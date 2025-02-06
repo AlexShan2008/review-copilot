@@ -1,9 +1,9 @@
 # AI Provider Configuration
 ai:
-  name: openai
-  provider: openai
-  apiKey: ${OPENAI_API_KEY}
-  model: gpt-3.5-turbo
+  provider: deepseek
+  apiKey: ${DEEPSEEK_API_KEY}
+  model: deepseek-chat
+  baseURL: https://api.deepseek.com/v1
 
 # Review Triggers
 triggers:
@@ -30,7 +30,7 @@ rules:
       Types: feature, bugfix, hotfix, release
 
   codeReview:
-    enabled: true
+    enabled: false
     prompt: |
       Review the code changes for:
       1. Code style and formatting
@@ -41,7 +41,7 @@ rules:
 
 # Custom Review Points
 customReviewPoints:
-  - name: "Security Check"
-    prompt: "Review code for security vulnerabilities..."
-  - name: "Performance Review"
-    prompt: "Analyze code for performance bottlenecks..."
+  - name: 'Security Check'
+    prompt: 'Review code for security vulnerabilities...'
+  - name: 'Performance Review'
+    prompt: 'Analyze code for performance bottlenecks...'
