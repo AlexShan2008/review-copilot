@@ -1,8 +1,10 @@
+export type AIProviderType = 'openai' | 'deepseek' | 'anthropic' | 'gemini';
+
 export interface AIProvider {
-  provider: string;
+  provider: AIProviderType;
   apiKey: string;
   model: string;
-  baseURL?: string; // 添加可选的 baseURL
+  baseURL?: string;
 }
 
 export interface ReviewTrigger {
@@ -50,4 +52,31 @@ export interface IAIProvider {
   review(prompt: string, content: string): Promise<string>;
 }
 
-export type AIProviderType = 'openai' | 'deepseek';
+export interface AIEnvConfig {
+  [key: string]: {
+    envKey: string;
+    defaultBaseURL?: string;
+    defaultModel?: string;
+  };
+}
+
+export const AI_PROVIDER_CONFIG: AIEnvConfig = {
+  openai: {
+    envKey: 'AI_API_KEY_OPENAI',
+    defaultModel: 'gpt-3.5-turbo',
+  },
+  deepseek: {
+    envKey: 'AI_API_KEY_DEEPSEEK',
+    defaultBaseURL: 'https://api.deepseek.com/v1',
+    defaultModel: 'deepseek-chat',
+  },
+  anthropic: {
+    envKey: 'AI_API_KEY_ANTHROPIC',
+    defaultBaseURL: 'https://api.anthropic.com/v1',
+    defaultModel: 'claude-2',
+  },
+  gemini: {
+    envKey: 'AI_API_KEY_GEMINI',
+    defaultModel: 'gemini-pro',
+  },
+};

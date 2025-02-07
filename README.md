@@ -30,11 +30,12 @@ reviewai init
 This will create a `.reviewai.yaml` configuration file in your project root.
 
 2. Configure your preferences in `.reviewai.yaml`:
+
 ```yaml
 # AI Provider Configuration
 ai:
   provider: openai
-  apiKey: ${OPENAI_API_KEY}
+  apiKey: ${AI_API_KEY_OPENAI}
   model: gpt-4
 
 # Review Triggers
@@ -55,7 +56,7 @@ rules:
 
   branchName:
     enabled: true
-    pattern: "^(feature|bugfix|hotfix|release)/[A-Z]+-[0-9]+-.+"
+    pattern: '^(feature|bugfix|hotfix|release)/[A-Z]+-[0-9]+-.+'
     prompt: |
       Verify branch name follows the pattern:
       <type>/<ticket-id>-<description>
@@ -73,10 +74,10 @@ rules:
 
 # Custom Review Points
 customReviewPoints:
-  - name: "Security Check"
-    prompt: "Review code for security vulnerabilities..."
-  - name: "Performance Review"
-    prompt: "Analyze code for performance bottlenecks..."
+  - name: 'Security Check'
+    prompt: 'Review code for security vulnerabilities...'
+  - name: 'Performance Review'
+    prompt: 'Analyze code for performance bottlenecks...'
 ```
 
 ## CI/CD Integration
@@ -101,7 +102,7 @@ jobs:
       - run: npm install -g reviewai
       - name: Run AI Review
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          AI_API_KEY_OPENAI: ${{ secrets.AI_API_KEY_OPENAI }}
         run: reviewai review
 ```
 
@@ -114,7 +115,7 @@ code-review:
     - npm install -g reviewai
     - reviewai review
   variables:
-    OPENAI_API_KEY: $OPENAI_API_KEY
+    AI_API_KEY_OPENAI: $AI_API_KEY_OPENAI
 ```
 
 ## Configuration Options
@@ -136,3 +137,36 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 MIT License - see the [LICENSE](LICENSE) file for details.
 
+## Environment Variables
+
+Configure your AI provider API keys in `.env`:
+
+```bash
+# OpenAI
+AI_API_KEY_OPENAI=sk-xxx...
+
+# DeepSeek
+AI_API_KEY_DEEPSEEK=sk-xxx...
+
+# Anthropic (Coming soon)
+AI_API_KEY_ANTHROPIC=sk-xxx...
+
+# Google Gemini (Coming soon)
+AI_API_KEY_GEMINI=xxx...
+```
+
+## Supported AI Providers
+
+- OpenAI (GPT-3.5, GPT-4)
+- DeepSeek
+- Anthropic Claude (Coming soon)
+- Google Gemini (Coming soon)
+
+Configure your preferred provider in `.reviewai.yaml`:
+
+```yaml
+ai:
+  provider: openai # Choose your provider
+  apiKey: ${AI_API_KEY_OPENAI} # Use corresponding env variable
+  model: gpt-3.5-turbo # Provider-specific model
+```

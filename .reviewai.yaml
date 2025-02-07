@@ -1,7 +1,7 @@
 # AI Provider Configuration
 ai:
   provider: deepseek
-  apiKey: ${DEEPSEEK_API_KEY}
+  apiKey: ${AI_API_KEY_DEEPSEEK}
   model: deepseek-chat
   baseURL: https://api.deepseek.com/v1
 
