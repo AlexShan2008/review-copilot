@@ -6,6 +6,11 @@
   "bin": {
     "reviewai": "./dist/cli/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "ts-node -r dotenv/config src/cli/index.ts",
@@ -14,6 +19,9 @@
     "lint": "eslint 'src/**/*.{js,ts}'",
     "format": "prettier --write 'src/**/*.{js,ts}'",
     "prepare": "husky install",
+    "prepublishOnly": "npm run build",
+    "version": "npm run build && git add -A dist",
+    "release": "npm version patch && git push --follow-tags && npm publish",
     "start": "node -r dotenv/config dist/cli/index.js"
   },
   "keywords": [
@@ -26,7 +34,7 @@
     "github",
     "gitlab"
   ],
-  "author": "",
+  "author": "Alex",
   "license": "MIT",
   "dependencies": {
     "chalk": "^4.1.2",
