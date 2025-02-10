@@ -8,6 +8,7 @@ import {
   getCurrentBranchName,
   getCurrentCommitMessage,
 } from '../../utils/git';
+import { GitHubService } from '../../services/github-service';
 
 interface ReviewCommandOptions {
   config: string;
@@ -94,6 +95,31 @@ export async function reviewCommand(
     console.log('Changes:', changes);
     console.log('Review result:', results);
 
+    const comment = formatReviewComment(results);
+
+    if (process.env.CI) {
+      const githubToken = process.env.GITHUB_TOKEN;
+      if (!githubToken) {
+        throw new Error('GITHUB_TOKEN is required in CI environment');
+      }
+
+      const github = new GitHubService(githubToken);
+      const prDetails = await github.getPRDetails();
+
+      if (prDetails) {
+        spinner.text = 'Posting review comments to GitHub PR...';
+        await github.addPRComment(
+          prDetails.owner,
+          prDetails.repo,
+          prDetails.prNumber,
+          comment,
+        );
+        spinner.succeed('Review comments posted to GitHub PR');
+      }
+    } else {
+      displayResults(results);
+    }
+
     return true;
   } catch (error) {
     spinner.fail(chalk.red('Review failed'));
@@ -143,4 +169,29 @@ function displayResults(results: ReviewResult[]): void {
 
     console.log(''); // Empty line for readability
   });
+}
+
+function formatReviewComment(results: ReviewResult[]): string {
+  let comment = '## 🤖 ReviewAI Report\n\n';
+
+  results.forEach((result) => {
+    const icon = result.success ? '✅' : '❌';
+    comment += `### ${icon} ${result.message}\n\n`;
+
+    if (result.suggestions?.length) {
+      result.suggestions.forEach((suggestion) => {
+        comment += `- ${suggestion}\n`;
+      });
+    }
+
+    if (result.errors?.length) {
+      result.errors.forEach((error) => {
+        comment += `- ❗ ${error}\n`;
+      });
+    }
+
+    comment += '\n';
+  });
+
+  return comment;
 }
