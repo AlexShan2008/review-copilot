@@ -44,18 +44,18 @@ export async function reviewCommand(
     const results: ReviewResult[] = [];
 
     // Review commit message if enabled
-    // if (config.rules.commitMessage.enabled) {
-    //   const commitMessage = await getCurrentCommitMessage();
-    //   const result = await aiProvider.review(
-    //     config.rules.commitMessage.prompt,
-    //     commitMessage,
-    //   );
-    //   results.push({
-    //     success: !result.includes('ERROR'),
-    //     message: 'Commit Message Review',
-    //     suggestions: [result],
-    //   });
-    // }
+    if (config.rules.commitMessage.enabled) {
+      const commitMessage = await getCurrentCommitMessage();
+      const result = await aiProvider.review(
+        config.rules.commitMessage.prompt,
+        commitMessage,
+      );
+      results.push({
+        success: !result.includes('ERROR'),
+        message: 'Commit Message Review',
+        suggestions: [result],
+      });
+    }
 
     // Review branch name if enabled
     if (config.rules.branchName.enabled) {
@@ -72,19 +72,19 @@ export async function reviewCommand(
     }
 
     // Review code changes if enabled
-    // if (config.rules.codeReview.enabled) {
-    //   for (const change of changes) {
-    //     const result = await aiProvider.review(
-    //       config.rules.codeReview.prompt,
-    //       change.content,
-    //     );
-    //     results.push({
-    //       success: !result.includes('ERROR'),
-    //       message: `Code Review: ${change.file}`,
-    //       suggestions: [result],
-    //     });
-    //   }
-    // }
+    if (config.rules.codeReview.enabled) {
+      for (const change of changes) {
+        const result = await aiProvider.review(
+          config.rules.codeReview.prompt,
+          change.content,
+        );
+        results.push({
+          success: !result.includes('ERROR'),
+          message: `Code Review: ${change.file}`,
+          suggestions: [result],
+        });
+      }
+    }
 
     // Display results
     spinner.stop();
