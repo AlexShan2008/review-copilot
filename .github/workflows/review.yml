@@ -7,6 +7,10 @@ on:
 jobs:
   review:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -27,4 +31,5 @@ jobs:
       - name: Run AI Review
         env:
           AI_API_KEY_DEEPSEEK: ${{ secrets.AI_API_KEY_DEEPSEEK }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: node -r dotenv/config dist/cli/index.js review
