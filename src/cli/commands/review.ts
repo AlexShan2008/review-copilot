@@ -98,6 +98,14 @@ export async function reviewCommand(
     const comment = formatReviewComment(results);
 
     if (process.env.GITHUB_ACTIONS === 'true') {
+      console.log('GitHub Actions Environment Variables:');
+      console.log({
+        GITHUB_REPOSITORY: process.env.GITHUB_REPOSITORY,
+        GITHUB_REPOSITORY_OWNER: process.env.GITHUB_REPOSITORY_OWNER,
+        GITHUB_EVENT_NAME: process.env.GITHUB_EVENT_NAME,
+        GITHUB_EVENT_PATH: process.env.GITHUB_EVENT_PATH,
+        GITHUB_REF: process.env.GITHUB_REF,
+      });
       console.log('GITHUB_ACTIONS is true');
       const githubToken = process.env.GITHUB_TOKEN;
       if (!githubToken) {
