@@ -12,8 +12,11 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '18'
-      - run: npm install -g reviewai
+      - name: Install dependencies
+        run: pnpm install
+      - name: Build
+        run: pnpm run build
       - name: Run AI Review
         env:
           AI_API_KEY_DEEPSEEK: ${{ secrets.AI_API_KEY_DEEPSEEK }}
-        run: reviewai review
+        run: node -r dotenv/config dist/cli/index.js review
