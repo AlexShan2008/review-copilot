@@ -98,6 +98,7 @@ export async function reviewCommand(
     const comment = formatReviewComment(results);
 
     if (process.env.GITHUB_ACTIONS === 'true') {
+      console.log('GITHUB_ACTIONS is true');
       const githubToken = process.env.GITHUB_TOKEN;
       if (!githubToken) {
         throw new Error('GITHUB_TOKEN is required in CI environment');
@@ -105,6 +106,8 @@ export async function reviewCommand(
 
       const github = new GitHubService(githubToken);
       const prDetails = await github.getPRDetails();
+
+      console.log('prDetails:', prDetails);
 
       if (prDetails) {
         spinner.text = 'Posting review comments to GitHub PR...';
@@ -114,6 +117,8 @@ export async function reviewCommand(
           prDetails.prNumber,
           comment,
         );
+
+        console.log('Review comments posted to GitHub PR');
         spinner.succeed('Review comments posted to GitHub PR');
       }
     } else {
