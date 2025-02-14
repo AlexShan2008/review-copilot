@@ -97,7 +97,7 @@ export async function reviewCommand(
 
     const comment = formatReviewComment(results);
 
-    if (process.env.CI) {
+    if (process.env.GITHUB_ACTIONS === 'true') {
       const githubToken = process.env.GITHUB_TOKEN;
       if (!githubToken) {
         throw new Error('GITHUB_TOKEN is required in CI environment');
