@@ -37,6 +37,7 @@
   "author": "Alex",
   "license": "MIT",
   "dependencies": {
+    "@octokit/rest": "^20.0.2",
     "chalk": "^4.1.2",
     "commander": "^12.0.0",
     "dotenv": "^16.4.5",
