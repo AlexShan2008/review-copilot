@@ -33,7 +33,4 @@ jobs:
           AI_API_KEY_DEEPSEEK: ${{ secrets.AI_API_KEY_DEEPSEEK }}
           GITHUB_TOKEN: ${{ github.token }}
           GITHUB_EVENT_NUMBER: ${{ github.event.number }}
-        run: |
-          echo "PR Number: ${{ github.event.number }}"
-          echo "Repository: ${{ github.repository }}"
-          node -r dotenv/config dist/cli/index.js review
+        run: node -r dotenv/config dist/cli/index.js review

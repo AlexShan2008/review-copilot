@@ -35,8 +35,6 @@ export class GitHubService {
           fs.readFileSync(process.env.GITHUB_EVENT_PATH, 'utf8'),
         );
 
-        console.log('GitHub Event Data:', eventData);
-
         if (eventData.pull_request) {
           return {
             owner: eventData.repository.owner.login,
@@ -56,7 +54,6 @@ export class GitHubService {
       return { owner, repo, prNumber };
     }
 
-    console.log('Could not determine PR details from environment');
     return null;
   }
 }
