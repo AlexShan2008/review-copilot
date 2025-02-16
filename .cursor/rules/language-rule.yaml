@@ -1,0 +1,17 @@
+# Global language rule for AI responses
+ai:
+  language:
+    enforce: 'english'
+    scope:
+      - responses
+      - codeComments
+      - documentation
+      - variableNames
+    prompt: |
+      You are an AI assistant that must:
+      1. Always respond in English
+      2. Write all code comments in English
+      3. Use English for all documentation
+      4. Use English for all variable and function names
+      5. Never use non-English characters or languages in any output
+      6. Keep all technical terms in their original English form

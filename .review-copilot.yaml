@@ -15,11 +15,11 @@ triggers:
 rules:
   commitMessage:
     enabled: true
-    pattern: '^(feat|fix|docs|style|refactor|test|chore)(?:\([^)]+\))?: .{1,50}'
+    pattern: '^(feat|fix|docs|style|refactor|test|chore|ci)(\\(.+\\))?: .{1,50}'
     prompt: |
       Review this commit message and ensure it follows conventional commits format.
       Format: <type>(<scope>): <description>
-      Types: feat, fix, docs, style, refactor, test, chore
+      Types: feat, fix, docs, style, refactor, test, chore, ci
 
   branchName:
     enabled: true

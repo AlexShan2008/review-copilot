@@ -7,7 +7,7 @@ jest.mock('../../../config/config-manager');
 jest.mock('../../../providers/openai-provider');
 jest.mock('../../../utils/git');
 
-describe('reviewCommand', () => {
+describe('review-copilot CLI', () => {
   let mockInstance: any;
 
   beforeEach(() => {
@@ -43,16 +43,18 @@ describe('reviewCommand', () => {
   });
 
   it('should successfully review changes', async () => {
-    const options = { config: '.reviewcopilot.yaml' };
+    const options = { config: '.review-copilot.yaml' };
     const result = await reviewCommand(options);
 
     expect(result).toBe(true);
-    expect(mockInstance.loadConfig).toHaveBeenCalledWith('.reviewcopilot.yaml');
+    expect(mockInstance.loadConfig).toHaveBeenCalledWith(
+      '.review-copilot.yaml',
+    );
   });
 
   it('should handle no changes scenario', async () => {
     (getGitChanges as jest.Mock).mockResolvedValue([]);
-    const options = { config: '.reviewcopilot.yaml' };
+    const options = { config: '.review-copilot.yaml' };
     const result = await reviewCommand(options);
 
     expect(result).toBe(true);
@@ -60,7 +62,7 @@ describe('reviewCommand', () => {
 
   it('should handle errors gracefully', async () => {
     mockInstance.loadConfig.mockRejectedValue(new Error('Test error'));
-    const options = { config: '.reviewcopilot.yaml' };
+    const options = { config: '.review-copilot.yaml' };
     const result = await reviewCommand(options);
 
     expect(result).toBe(false);

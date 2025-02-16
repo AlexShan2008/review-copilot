@@ -11,14 +11,12 @@ ReviewCopilot is an AI-powered code review assistant that helps developers impro
 - 🌿 Branch naming convention check
 - 📝 Code style and standards verification
 - ⚙️ Customizable AI prompts via configuration
-- 🔄 Seamless CI/CD integration (GitHub Actions & GitLab CI)
-- 🎯 Flexible review trigger points
-- 🤖 Multiple AI provider support (OpenAI by default)
+- 🔄 Multiple AI provider support (OpenAI, DeepSeek)
 
 ## Installation
 
 ```bash
-npm install -g reviewcopilot
+npm install -g review-copilot
 ```
 
 ## Quick Start
@@ -26,19 +24,19 @@ npm install -g reviewcopilot
 1. Initialize configuration:
 
 ```bash
-reviewcopilot init
+review-copilot init
 ```
 
-This will create a `.reviewcopilot.yaml` configuration file in your project root.
+This will create a `.review-copilot.yaml` configuration file in your project root.
 
-2. Configure your preferences in `.reviewcopilot.yaml`:
+2. Configure your preferences in `.review-copilot.yaml`:
 
 ```yaml
 # AI Provider Configuration
 ai:
-  provider: openai
-  apiKey: ${AI_API_KEY_OPENAI}
-  model: gpt-4
+  provider: openai # or deepseek
+  apiKey: ${AI_API_KEY_OPENAI} # or ${AI_API_KEY_DEEPSEEK}
+  model: gpt-4 # or gpt-3.5-turbo
 
 # Review Triggers
 triggers:
@@ -73,71 +71,20 @@ rules:
       3. Performance considerations
       4. Security vulnerabilities
       5. Best practices compliance
-
-# Custom Review Points
-customReviewPoints:
-  - name: 'Security Check'
-    prompt: 'Review code for security vulnerabilities...'
-  - name: 'Performance Review'
-    prompt: 'Analyze code for performance bottlenecks...'
 ```
 
-## CI/CD Integration
+## Command Line Usage
 
-### GitHub Actions
+```bash
+# Initialize configuration
+review-copilot init
 
-```yaml
-name: reviewcopilot Review
+# Review current changes
+review-copilot review
 
-on:
-  pull_request:
-    types: [opened, synchronize]
-
-jobs:
-  review:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '18'
-      - run: npm install -g reviewcopilot
-      - name: Run AI Review
-        env:
-          AI_API_KEY_OPENAI: ${{ secrets.AI_API_KEY_OPENAI }}
-        run: reviewcopilot review
+# Show help
+review-copilot --help
 ```
-
-### GitLab CI
-
-```yaml
-code-review:
-  stage: review
-  script:
-    - npm install -g reviewcopilot
-    - reviewcopilot review
-  variables:
-    AI_API_KEY_OPENAI: $AI_API_KEY_OPENAI
-```
-
-## Configuration Options
-
-The `.reviewcopilot.yaml` file supports:
-
-- Custom AI providers configuration
-- Review trigger points customization
-- Commit message patterns
-- Branch naming conventions
-- Code review rules and prompts
-- Custom review checkpoints
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-## License
-
-MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Environment Variables
 
@@ -145,30 +92,32 @@ Configure your AI provider API keys in `.env`:
 
 ```bash
 # OpenAI
-AI_API_KEY_OPENAI=sk-xxx...
+AI_API_KEY_OPENAI=your-openai-api-key
 
 # DeepSeek
-AI_API_KEY_DEEPSEEK=sk-xxx...
-
-# Anthropic (Coming soon)
-AI_API_KEY_ANTHROPIC=sk-xxx...
-
-# Google Gemini (Coming soon)
-AI_API_KEY_GEMINI=xxx...
+AI_API_KEY_DEEPSEEK=your-deepseek-api-key
 ```
 
 ## Supported AI Providers
 
+Currently supported AI providers:
+
 - OpenAI (GPT-3.5, GPT-4)
 - DeepSeek
-- Anthropic Claude (Coming soon)
-- Google Gemini (Coming soon)
 
-Configure your preferred provider in `.reviewcopilot.yaml`:
+Configure your preferred provider in `.review-copilot.yaml`:
 
 ```yaml
 ai:
-  provider: openai # Choose your provider
+  provider: openai # or deepseek
   apiKey: ${AI_API_KEY_OPENAI} # Use corresponding env variable
-  model: gpt-3.5-turbo # Provider-specific model
+  model: gpt-4 # Provider-specific model
 ```
+
+## Contributing
+
+We welcome contributions! Please feel free to submit a Pull Request.
+
+## License
+
+MIT License - see the [LICENSE](LICENSE) file for details.

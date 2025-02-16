@@ -76,7 +76,7 @@ export class ConfigManager {
   }
 
   public async loadConfig(
-    path: string = '.reviewcopilot.yaml',
+    path: string = '.review-copilot.yaml',
   ): Promise<Config> {
     try {
       const configFile = await readFile(path, 'utf8');

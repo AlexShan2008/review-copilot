@@ -59,6 +59,8 @@ git checkout -b feature/your-feature-name
 npm test
 ```
 
+5. Create a `.review-copilot.yaml` configuration file in your project root.
+
 ## Project Structure
 
 ```
@@ -109,7 +111,7 @@ Example:
 ```
 feat(review): add support for custom AI providers
 
-Added the ability to configure custom AI providers through the .reviewcopilot.yaml file.
+Added the ability to configure custom AI providers through the .review-copilot.yaml file.
 This change includes:
 - New provider interface
 - Configuration validation
