@@ -1,10 +1,10 @@
 {
-  "name": "reviewai",
+  "name": "review-copilot",
   "version": "0.1.0",
-  "description": "AI-powered code review assistant with customizable prompts",
+  "description": "ReviewCopilot - AI-powered code review assistant with customizable prompts",
   "main": "dist/index.js",
   "bin": {
-    "reviewai": "./dist/cli/index.js"
+    "reviewcopilot": "./dist/cli/index.js"
   },
   "files": [
     "dist",

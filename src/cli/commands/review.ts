@@ -172,7 +172,7 @@ function displayResults(results: ReviewResult[]): void {
 }
 
 function formatReviewComment(results: ReviewResult[]): string {
-  let comment = '## 🤖 ReviewAI Report\n\n';
+  let comment = '## 🤖 ReviewCopilot Report\n\n';
 
   results.forEach((result) => {
     const icon = result.success ? '✅' : '❌';
