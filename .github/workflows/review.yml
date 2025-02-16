@@ -1,4 +1,4 @@
-name: ReviewAI
+name: ReviewCopilot
 
 on:
   pull_request:

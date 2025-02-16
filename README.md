@@ -1,4 +1,6 @@
-# ReviewAI
+# ReviewCopilot
+
+ReviewCopilot is an AI-powered code review assistant that helps developers improve code quality and efficiency.
 
 🤖 AI-powered code review assistant with customizable prompts: enforce commit messages, branch names and code standards your way.
 
@@ -16,7 +18,7 @@
 ## Installation
 
 ```bash
-npm install -g reviewai
+npm install -g reviewcopilot
 ```
 
 ## Quick Start
@@ -24,12 +26,12 @@ npm install -g reviewai
 1. Initialize configuration:
 
 ```bash
-reviewai init
+reviewcopilot init
 ```
 
-This will create a `.reviewai.yaml` configuration file in your project root.
+This will create a `.reviewcopilot.yaml` configuration file in your project root.
 
-2. Configure your preferences in `.reviewai.yaml`:
+2. Configure your preferences in `.reviewcopilot.yaml`:
 
 ```yaml
 # AI Provider Configuration
@@ -85,7 +87,7 @@ customReviewPoints:
 ### GitHub Actions
 
 ```yaml
-name: reviewai Review
+name: reviewcopilot Review
 
 on:
   pull_request:
@@ -99,11 +101,11 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '18'
-      - run: npm install -g reviewai
+      - run: npm install -g reviewcopilot
       - name: Run AI Review
         env:
           AI_API_KEY_OPENAI: ${{ secrets.AI_API_KEY_OPENAI }}
-        run: reviewai review
+        run: reviewcopilot review
 ```
 
 ### GitLab CI
@@ -112,15 +114,15 @@ jobs:
 code-review:
   stage: review
   script:
-    - npm install -g reviewai
-    - reviewai review
+    - npm install -g reviewcopilot
+    - reviewcopilot review
   variables:
     AI_API_KEY_OPENAI: $AI_API_KEY_OPENAI
 ```
 
 ## Configuration Options
 
-The `.reviewai.yaml` file supports:
+The `.reviewcopilot.yaml` file supports:
 
 - Custom AI providers configuration
 - Review trigger points customization
@@ -162,7 +164,7 @@ AI_API_KEY_GEMINI=xxx...
 - Anthropic Claude (Coming soon)
 - Google Gemini (Coming soon)
 
-Configure your preferred provider in `.reviewai.yaml`:
+Configure your preferred provider in `.reviewcopilot.yaml`:
 
 ```yaml
 ai:

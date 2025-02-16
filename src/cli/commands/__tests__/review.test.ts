@@ -12,10 +12,10 @@ describe('reviewCommand', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Mock OpenAIProvider
     (OpenAIProvider as jest.Mock).mockImplementation(() => ({
-      review: jest.fn().mockResolvedValue('AI Review Result')
+      review: jest.fn().mockResolvedValue('AI Review Result'),
     }));
 
     mockInstance = {
@@ -24,35 +24,35 @@ describe('reviewCommand', () => {
         ai: {
           provider: 'openai',
           apiKey: 'test-key',
-          model: 'gpt-3.5-turbo'
+          model: 'gpt-3.5-turbo',
         },
         rules: {
           commitMessage: { enabled: false },
           branchName: { enabled: false },
-          codeReview: { enabled: true, prompt: 'test prompt' }
-        }
-      })
+          codeReview: { enabled: true, prompt: 'test prompt' },
+        },
+      }),
     };
 
     jest.spyOn(ConfigManager, 'getInstance').mockReturnValue(mockInstance);
 
     // Mock getGitChanges
     (getGitChanges as jest.Mock).mockResolvedValue([
-      { file: 'test.ts', content: 'test content' }
+      { file: 'test.ts', content: 'test content' },
     ]);
   });
 
   it('should successfully review changes', async () => {
-    const options = { config: '.reviewai.yaml' };
+    const options = { config: '.reviewcopilot.yaml' };
     const result = await reviewCommand(options);
 
     expect(result).toBe(true);
-    expect(mockInstance.loadConfig).toHaveBeenCalledWith('.reviewai.yaml');
+    expect(mockInstance.loadConfig).toHaveBeenCalledWith('.reviewcopilot.yaml');
   });
 
   it('should handle no changes scenario', async () => {
     (getGitChanges as jest.Mock).mockResolvedValue([]);
-    const options = { config: '.reviewai.yaml' };
+    const options = { config: '.reviewcopilot.yaml' };
     const result = await reviewCommand(options);
 
     expect(result).toBe(true);
@@ -60,9 +60,9 @@ describe('reviewCommand', () => {
 
   it('should handle errors gracefully', async () => {
     mockInstance.loadConfig.mockRejectedValue(new Error('Test error'));
-    const options = { config: '.reviewai.yaml' };
+    const options = { config: '.reviewcopilot.yaml' };
     const result = await reviewCommand(options);
 
     expect(result).toBe(false);
   });
-}); 
+});

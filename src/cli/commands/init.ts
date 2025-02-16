@@ -54,16 +54,16 @@ customReviewPoints:
 `;
 
 export async function initCommand(): Promise<void> {
-  const spinner = ora('Initializing ReviewAI configuration...').start();
+  const spinner = ora('Initializing ReviewCopilot configuration...').start();
 
   try {
-    const configPath = path.join(process.cwd(), '.reviewai.yaml');
+    const configPath = path.join(process.cwd(), '.reviewcopilot.yaml');
 
     if (existsSync(configPath)) {
       spinner.fail(chalk.yellow('Configuration file already exists!'));
       console.log(
         chalk.blue(
-          'To overwrite, please remove the existing .reviewai.yaml file first.',
+          'To overwrite, please remove the existing .reviewcopilot.yaml file first.',
         ),
       );
       return;
@@ -78,9 +78,11 @@ export async function initCommand(): Promise<void> {
         '1. Set your OpenAI API key in .env or as environment variable',
       ),
     );
-    console.log(chalk.blue('2. Customize the configuration in .reviewai.yaml'));
     console.log(
-      chalk.blue('3. Run `reviewai review` to start reviewing code\n'),
+      chalk.blue('2. Customize the configuration in .reviewcopilot.yaml'),
+    );
+    console.log(
+      chalk.blue('3. Run `reviewcopilot review` to start reviewing code\n'),
     );
   } catch (error) {
     spinner.fail(chalk.red('Failed to create configuration file'));

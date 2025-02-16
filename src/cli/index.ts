@@ -7,19 +7,19 @@ import { reviewCommand } from './commands/review';
 const program = new Command();
 
 program
-  .name('reviewai')
+  .name('reviewcopilot')
   .description('AI-powered code review assistant')
   .version('0.1.0');
 
 program
   .command('init')
-  .description('Initialize ReviewAI configuration')
+  .description('Initialize ReviewCopilot configuration')
   .action(initCommand);
 
 program
   .command('review')
   .description('Review code changes')
-  .option('-c, --config <path>', 'Path to config file', '.reviewai.yaml')
+  .option('-c, --config <path>', 'Path to config file', '.reviewcopilot.yaml')
   .action(async (options) => {
     const success = await reviewCommand(options);
     if (!success) {
@@ -27,4 +27,4 @@ program
     }
   });
 
-program.parse(); 
+program.parse();

@@ -75,7 +75,9 @@ export class ConfigManager {
     return obj;
   }
 
-  public async loadConfig(path: string = '.reviewai.yaml'): Promise<Config> {
+  public async loadConfig(
+    path: string = '.reviewcopilot.yaml',
+  ): Promise<Config> {
     try {
       const configFile = await readFile(path, 'utf8');
       const parsedConfig = parse(configFile);
