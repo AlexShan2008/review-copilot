@@ -4,7 +4,7 @@
   "description": "ReviewCopilot - AI-powered code review assistant with customizable prompts",
   "main": "dist/index.js",
   "bin": {
-    "reviewcopilot": "./dist/cli/index.js"
+    "review-copilot": "./dist/cli/index.js"
   },
   "files": [
     "dist",
@@ -69,5 +69,13 @@
       "eslint --fix",
       "prettier --write"
     ]
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexShan2008/review-copilot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AlexShan2008/review-copilot/issues"
+  },
+  "homepage": "https://github.com/AlexShan2008/review-copilot#readme"
 }

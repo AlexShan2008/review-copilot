@@ -57,13 +57,13 @@ export async function initCommand(): Promise<void> {
   const spinner = ora('Initializing ReviewCopilot configuration...').start();
 
   try {
-    const configPath = path.join(process.cwd(), '.reviewcopilot.yaml');
+    const configPath = path.join(process.cwd(), '.review-copilot.yaml');
 
     if (existsSync(configPath)) {
       spinner.fail(chalk.yellow('Configuration file already exists!'));
       console.log(
         chalk.blue(
-          'To overwrite, please remove the existing .reviewcopilot.yaml file first.',
+          'To overwrite, please remove the existing .review-copilot.yaml file first.',
         ),
       );
       return;
@@ -79,10 +79,10 @@ export async function initCommand(): Promise<void> {
       ),
     );
     console.log(
-      chalk.blue('2. Customize the configuration in .reviewcopilot.yaml'),
+      chalk.blue('2. Customize the configuration in .review-copilot.yaml'),
     );
     console.log(
-      chalk.blue('3. Run `reviewcopilot review` to start reviewing code\n'),
+      chalk.blue('3. Run `review-copilot review` to start reviewing code\n'),
     );
   } catch (error) {
     spinner.fail(chalk.red('Failed to create configuration file'));
