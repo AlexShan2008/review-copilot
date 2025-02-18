@@ -17,7 +17,7 @@ export class DeepSeekProvider implements IAIProvider {
 
     this.client = new OpenAI({
       apiKey: config.apiKey,
-      baseURL: config.baseURL || 'https://api.deepseek.com/v1',
+      baseURL: config.baseURL,
       defaultHeaders: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${config.apiKey}`,
@@ -32,10 +32,15 @@ export class DeepSeekProvider implements IAIProvider {
       console.log(chalk.blue('\nSending request to DeepSeek:'));
       console.log(chalk.gray('Model:'), this.config.model);
       console.log(chalk.gray('BaseURL:'), this.config.baseURL);
-      console.log(chalk.gray('Prompt:'), prompt.slice(0, 100) + '...');
+      console.log(chalk.gray('Prompt:'), prompt);
+      console.log(chalk.gray('Content:'), content);
+
+      if (!content.trim()) {
+        return 'No content to review.';
+      }
 
       const requestBody = {
-        model: this.config.model,
+        model: this.config.model || 'deepseek-chat',
         messages: [
           {
             role: 'system',
@@ -46,7 +51,8 @@ export class DeepSeekProvider implements IAIProvider {
             role: 'user',
             content: `${prompt}\n\nContent to review:\n${content}`,
           },
-        ] as ChatCompletionMessageParam[],
+        ],
+        temperature: 0.7,
         stream: false,
       };
 
@@ -56,17 +62,18 @@ export class DeepSeekProvider implements IAIProvider {
       );
 
       const response = (await this.client.chat.completions.create(
-        requestBody,
+        JSON.parse(JSON.stringify(requestBody)),
       )) as ChatCompletion;
 
       if (!response.choices?.[0]?.message?.content) {
         throw new Error('Empty response from DeepSeek API');
       }
 
+      const result = response.choices[0].message.content;
       console.log(chalk.green('\nReceived response from DeepSeek'));
-      console.log(chalk.gray('Response:'), response.choices[0].message.content);
+      console.log(chalk.gray('Response:'), result);
 
-      return response.choices[0].message.content;
+      return result;
     } catch (error) {
       console.error(chalk.red('\nDeepSeek API Error:'), error);
 
@@ -80,9 +87,13 @@ export class DeepSeekProvider implements IAIProvider {
           throw new Error(
             'DeepSeek API endpoint not found. Please check the API URL.',
           );
-        } else if (errorMessage.includes('invalid json')) {
+        } else if (errorMessage.includes('429')) {
           throw new Error(
-            'Invalid response from DeepSeek API. Please check the API documentation for the correct request format.',
+            'DeepSeek API rate limit exceeded. Please try again later.',
+          );
+        } else if (errorMessage.includes('500')) {
+          throw new Error(
+            'DeepSeek API internal server error. Please try again later.',
           );
         }
 
@@ -93,7 +104,7 @@ export class DeepSeekProvider implements IAIProvider {
         });
       }
 
-      throw new Error(`DeepSeek review failed: ${error}`);
+      throw error;
     }
   }
 }
