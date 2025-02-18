@@ -74,26 +74,25 @@ export async function reviewCommand(
 
     // Review code changes if enabled
     if (config.rules.codeReview.enabled) {
-      for (const change of changes) {
-        const result = await aiProvider.review(
-          config.rules.codeReview.prompt,
-          change.content,
-        );
-        results.push({
-          success: !result.includes('ERROR'),
-          message: `Code Review: ${change.file}`,
-          suggestions: [result],
-        });
-      }
+      const combinedContent = changes
+        .map((change) => `File: ${change.file}\n${change.content}\n`)
+        .join('\n---\n\n');
+
+      const result = await aiProvider.review(
+        config.rules.codeReview.prompt,
+        combinedContent,
+      );
+
+      results.push({
+        success: !result.includes('ERROR'),
+        message: 'Code Review',
+        suggestions: [result],
+      });
     }
 
     // Display results
     spinner.stop();
     displayResults(results);
-
-    console.log('Config:', config);
-    console.log('Changes:', changes);
-    console.log('Review result:', results);
 
     const comment = formatReviewComment(results);
 
