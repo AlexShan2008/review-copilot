@@ -29,7 +29,7 @@ export interface Config {
   rules: {
     commitMessage: ReviewRule;
     branchName: ReviewRule;
-    codeReview: ReviewRule;
+    codeChanges: ReviewRule;
   };
   customReviewPoints?: CustomReviewPoint[];
 }

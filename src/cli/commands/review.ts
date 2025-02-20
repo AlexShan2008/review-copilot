@@ -73,13 +73,15 @@ export async function reviewCommand(
     }
 
     // Review code changes if enabled
-    if (config.rules.codeReview.enabled) {
+    if (config.rules.codeChanges.enabled) {
       const combinedContent = changes
         .map((change) => `File: ${change.file}\n${change.content}\n`)
         .join('\n---\n\n');
 
+      console.log('Combined content:', combinedContent);
+
       const result = await aiProvider.review(
-        config.rules.codeReview.prompt,
+        config.rules.codeChanges.prompt,
         combinedContent,
       );
 

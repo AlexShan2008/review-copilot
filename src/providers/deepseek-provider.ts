@@ -23,8 +23,16 @@ export class DeepSeekProvider implements IAIProvider {
         Authorization: `Bearer ${config.apiKey}`,
       },
       defaultQuery: undefined,
-      timeout: 30000,
+      timeout: 60_1000,
     });
+  }
+
+  private formatContent(prompt: string, content: string): string {
+    return JSON.stringify(
+      `${prompt}. Content to review:\n${content}`
+        .replace(/\n{1,}/g, ' ')
+        .trim(),
+    );
   }
 
   async review(prompt: string, content: string): Promise<string> {
@@ -32,8 +40,8 @@ export class DeepSeekProvider implements IAIProvider {
       console.log(chalk.blue('\nSending request to DeepSeek:'));
       console.log(chalk.gray('Model:'), this.config.model);
       console.log(chalk.gray('BaseURL:'), this.config.baseURL);
-      console.log(chalk.gray('Prompt:'), prompt);
-      console.log(chalk.gray('Content:'), content);
+      console.log(chalk.gray('Prompt:'), prompt.slice(0, 100) + '...');
+      console.log(chalk.gray('Content:'), JSON.stringify(content));
 
       if (!content.trim()) {
         return 'No content to review.';
@@ -43,27 +51,23 @@ export class DeepSeekProvider implements IAIProvider {
         model: this.config.model || 'deepseek-chat',
         messages: [
           {
-            role: 'system',
+            role: 'system' as const,
             content:
               'You are a professional code reviewer. Provide clear, concise, and actionable feedback.',
           },
           {
-            role: 'user',
-            content: `${prompt}\n\nContent to review:\n${content}`,
+            role: 'user' as const,
+            content: this.formatContent(prompt, content),
           },
         ],
-        temperature: 0.7,
-        stream: false,
+        temperature: 0.5,
+        stream: false as const,
+        max_tokens: 8192,
       };
 
-      console.log(
-        chalk.gray('Request body:'),
-        JSON.stringify(requestBody, null, 2),
-      );
+      console.log(chalk.gray('Request body:'), requestBody);
 
-      const response = (await this.client.chat.completions.create(
-        JSON.parse(JSON.stringify(requestBody)),
-      )) as ChatCompletion;
+      const response = await this.client.chat.completions.create(requestBody);
 
       if (!response.choices?.[0]?.message?.content) {
         throw new Error('Empty response from DeepSeek API');

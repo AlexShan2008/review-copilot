@@ -62,7 +62,7 @@ rules:
       <type>/<ticket-id>-<description>
       Types: feature, bugfix, hotfix, release
 
-  codeReview:
+  codeChanges:
     enabled: true
     prompt: |
       Review the code changes for:
