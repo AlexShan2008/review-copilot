@@ -29,7 +29,7 @@ describe('review-copilot CLI', () => {
         rules: {
           commitMessage: { enabled: false },
           branchName: { enabled: false },
-          codeReview: { enabled: true, prompt: 'test prompt' },
+          codeChanges: { enabled: true, prompt: 'test prompt' },
         },
       }),
     };

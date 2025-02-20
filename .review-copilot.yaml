@@ -29,8 +29,8 @@ rules:
       <type>/<ticket-id>-<description>
       Types: feature, bugfix, hotfix, release
 
-  codeReview:
-    enabled: false
+  codeChanges:
+    enabled: true
     prompt: |
       Review the code changes for:
       1. Code style and formatting

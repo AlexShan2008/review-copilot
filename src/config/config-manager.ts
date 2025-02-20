@@ -27,7 +27,7 @@ const configSchema = z.object({
       pattern: z.string().optional(),
       prompt: z.string(),
     }),
-    codeReview: z.object({
+    codeChanges: z.object({
       enabled: z.boolean(),
       prompt: z.string(),
     }),
