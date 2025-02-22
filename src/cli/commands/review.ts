@@ -14,6 +14,46 @@ interface ReviewCommandOptions {
   config: string;
 }
 
+<<<<<<< Updated upstream
+=======
+interface CodeChangesConfig {
+  enabled: boolean;
+  prompt: string;
+  filePatterns?: string[];
+}
+
+function hasReviewSuggestions(result: string): boolean {
+  const suggestionPatterns = [
+    /suggested\s+to\s+/i,
+    /should\s+be\s+/i,
+    /incorrect\s+.*,\s+use/i,
+    /does\s+not\s+follow\s+.*\s+convention/i,
+    /recommend\s+.*\s+instead/i,
+    /consider\s+using/i,
+    /could\s+be\s+improved/i,
+  ];
+
+  return suggestionPatterns.some((pattern) => pattern.test(result));
+}
+
+async function processReview(
+  aiProvider: any,
+  prompt: string,
+  content: string,
+  reviewType: string,
+  results: ReviewResult[],
+): Promise<void> {
+  const result = await aiProvider.review(prompt, content);
+  if (hasReviewSuggestions(result)) {
+    results.push({
+      success: false,
+      message: `${reviewType} Review`,
+      suggestions: [result],
+    });
+  }
+}
+
+>>>>>>> Stashed changes
 export async function reviewCommand(
   options: ReviewCommandOptions,
 ): Promise<boolean> {
@@ -47,29 +87,25 @@ export async function reviewCommand(
     // Review commit message if enabled
     if (config.rules.commitMessage.enabled) {
       const commitMessage = await getCurrentCommitMessage();
-      const result = await aiProvider.review(
+      await processReview(
+        aiProvider,
         config.rules.commitMessage.prompt,
         commitMessage,
+        'Commit Message',
+        results,
       );
-      results.push({
-        success: !result.includes('ERROR'),
-        message: 'Commit Message Review',
-        suggestions: [result],
-      });
     }
 
     // Review branch name if enabled
     if (config.rules.branchName.enabled) {
       const branchName = await getCurrentBranchName();
-      const result = await aiProvider.review(
+      await processReview(
+        aiProvider,
         config.rules.branchName.prompt,
         branchName,
+        'Branch Name',
+        results,
       );
-      results.push({
-        success: !result.includes('ERROR'),
-        message: 'Branch Name Review',
-        suggestions: [result],
-      });
     }
 
     // Review code changes if enabled
@@ -80,45 +116,44 @@ export async function reviewCommand(
 
       console.log('Combined content:', combinedContent);
 
-      const result = await aiProvider.review(
+      await processReview(
+        aiProvider,
         config.rules.codeChanges.prompt,
         combinedContent,
+        'Code',
+        results,
       );
-
-      results.push({
-        success: !result.includes('ERROR'),
-        message: 'Code Review',
-        suggestions: [result],
-      });
     }
 
-    // Display results
+    // Display results only if there are any errors
     spinner.stop();
-    displayResults(results);
-
-    const comment = formatReviewComment(results);
-
-    if (process.env.GITHUB_ACTIONS === 'true') {
-      const githubToken = process.env.GITHUB_TOKEN;
-      if (!githubToken) {
-        throw new Error('GITHUB_TOKEN is required in CI environment');
-      }
-
-      const github = new GitHubService(githubToken);
-      const prDetails = await github.getPRDetails();
-
-      if (prDetails) {
-        spinner.text = 'Posting review comments to GitHub PR...';
-        await github.addPRComment(
-          prDetails.owner,
-          prDetails.repo,
-          prDetails.prNumber,
-          comment,
-        );
-        spinner.succeed('Review comments posted to GitHub PR');
-      }
-    } else {
+    if (results.length > 0) {
       displayResults(results);
+
+      const comment = formatReviewComment(results);
+
+      if (process.env.GITHUB_ACTIONS === 'true') {
+        const githubToken = process.env.GITHUB_TOKEN;
+        if (!githubToken) {
+          throw new Error('GITHUB_TOKEN is required in CI environment');
+        }
+
+        const github = new GitHubService(githubToken);
+        const prDetails = await github.getPRDetails();
+
+        if (prDetails) {
+          spinner.text = 'Posting review comments to GitHub PR...';
+          await github.addPRComment(
+            prDetails.owner,
+            prDetails.repo,
+            prDetails.prNumber,
+            comment,
+          );
+          spinner.succeed('Review comments posted to GitHub PR');
+        }
+      } else {
+        displayResults(results);
+      }
     }
 
     return true;
