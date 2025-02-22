@@ -9,17 +9,10 @@ import {
   getCurrentCommitMessage,
 } from '../../utils/git';
 import { GitHubService } from '../../services/github-service';
+import micromatch from 'micromatch';
 
 interface ReviewCommandOptions {
   config: string;
-}
-
-<<<<<<< Updated upstream
-=======
-interface CodeChangesConfig {
-  enabled: boolean;
-  prompt: string;
-  filePatterns?: string[];
 }
 
 function hasReviewSuggestions(result: string): boolean {
@@ -53,7 +46,6 @@ async function processReview(
   }
 }
 
->>>>>>> Stashed changes
 export async function reviewCommand(
   options: ReviewCommandOptions,
 ): Promise<boolean> {
@@ -110,7 +102,19 @@ export async function reviewCommand(
 
     // Review code changes if enabled
     if (config.rules.codeChanges.enabled) {
-      const combinedContent = changes
+      const patterns = config.rules.codeChanges.filePatterns ?? [
+        '**/*.{ts,tsx,js,jsx}',
+      ];
+      const filteredChanges = changes.filter((change) =>
+        micromatch.isMatch(change.file, patterns, { dot: true }),
+      );
+
+      if (filteredChanges.length === 0) {
+        spinner.info(chalk.yellow('No matching files to review.'));
+        return true;
+      }
+
+      const combinedContent = filteredChanges
         .map((change) => `File: ${change.file}\n${change.content}\n`)
         .join('\n---\n\n');
 

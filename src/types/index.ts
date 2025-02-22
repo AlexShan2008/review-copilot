@@ -16,6 +16,7 @@ export interface ReviewRule {
   enabled: boolean;
   pattern?: string;
   prompt: string;
+  filePatterns?: string[];
 }
 
 export interface CustomReviewPoint {
