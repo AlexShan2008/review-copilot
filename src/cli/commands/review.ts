@@ -17,16 +17,24 @@ interface ReviewCommandOptions {
 
 function hasReviewSuggestions(result: string): boolean {
   const suggestionPatterns = [
-    /suggested\s+to\s+/i,
-    /should\s+be\s+/i,
-    /incorrect\s+.*,\s+use/i,
-    /does\s+not\s+follow\s+.*\s+convention/i,
-    /recommend\s+.*\s+instead/i,
-    /consider\s+using/i,
-    /could\s+be\s+improved/i,
+    /suggested/i,
+    /should/i,
+    /incorrect/i,
+    /does not follow/i,
+    /missing/i,
+    /recommend/i,
+    /consider/i,
+    /could be/i,
+    /improve/i,
+    /need to/i,
+    /must be/i,
+    /expected/i,
+    /invalid/i,
   ];
 
-  return suggestionPatterns.some((pattern) => pattern.test(result));
+  return suggestionPatterns.some((pattern) =>
+    JSON.stringify(result).toLowerCase().match(pattern),
+  );
 }
 
 async function processReview(
@@ -105,28 +113,36 @@ export async function reviewCommand(
       const patterns = config.rules.codeChanges.filePatterns ?? [
         '**/*.{ts,tsx,js,jsx}',
       ];
+      console.log('File patterns:', patterns);
+      console.log(
+        'Changes:',
+        changes.map((c) => c.file),
+      );
+
       const filteredChanges = changes.filter((change) =>
         micromatch.isMatch(change.file, patterns, { dot: true }),
       );
 
+      console.log(
+        'Filtered changes:',
+        filteredChanges.map((c) => c.file),
+      );
+
       if (filteredChanges.length === 0) {
         spinner.info(chalk.yellow('No matching files to review.'));
-        return true;
+      } else {
+        const combinedContent = filteredChanges
+          .map((change) => `File: ${change.file}\n${change.content}\n`)
+          .join('\n---\n\n');
+
+        await processReview(
+          aiProvider,
+          config.rules.codeChanges.prompt,
+          combinedContent,
+          'Code',
+          results,
+        );
       }
-
-      const combinedContent = filteredChanges
-        .map((change) => `File: ${change.file}\n${change.content}\n`)
-        .join('\n---\n\n');
-
-      console.log('Combined content:', combinedContent);
-
-      await processReview(
-        aiProvider,
-        config.rules.codeChanges.prompt,
-        combinedContent,
-        'Code',
-        results,
-      );
     }
 
     // Display results only if there are any errors
