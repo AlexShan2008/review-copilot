@@ -1,123 +1,83 @@
 # ReviewCopilot
 
-ReviewCopilot is an AI-powered code review assistant that helps developers improve code quality and efficiency.
+🤖 AI-powered code review assistant that helps you maintain code quality with customizable rules.
 
-🤖 AI-powered code review assistant with customizable prompts: enforce commit messages, branch names and code standards your way.
+## Quick Start
 
-## Features
-
-- 🔍 Automated code review powered by AI
-- ✍️ Commit message format validation
-- 🌿 Branch naming convention check
-- 📝 Code style and standards verification
-- ⚙️ Customizable AI prompts via configuration
-- 🔄 Multiple AI provider support (OpenAI, DeepSeek)
-
-## Installation
+1. Install:
 
 ```bash
 npm install -g review-copilot
 ```
 
-## Quick Start
-
-1. Initialize configuration:
+2. Initialize config:
 
 ```bash
 review-copilot init
 ```
 
-This will create a `.review-copilot.yaml` configuration file in your project root.
+3. Set your AI provider key in `.env`:
 
-2. Configure your preferences in `.review-copilot.yaml`:
+```bash
+AI_API_KEY_OPENAI=your-key
+# or
+AI_API_KEY_DEEPSEEK=your-key
+```
+
+4. Run review:
+
+```bash
+review-copilot review
+```
+
+## Configuration
+
+`.review-copilot.yaml` example:
 
 ```yaml
-# AI Provider Configuration
 ai:
   provider: openai # or deepseek
-  apiKey: ${AI_API_KEY_OPENAI} # or ${AI_API_KEY_DEEPSEEK}
   model: gpt-4 # or gpt-3.5-turbo
 
-# Review Triggers
-triggers:
-  - on: pull_request
-  - on: merge_request
-  - on: push
-
-# Code Review Rules
 rules:
+  # Review commit messages
   commitMessage:
     enabled: true
     pattern: "^(feat|fix|docs|style|refactor|test|chore)(\\(.+\\))?: .{1,50}"
-    prompt: |
-      Review this commit message and ensure it follows conventional commits format.
-      Format: <type>(<scope>): <description>
-      Types: feat, fix, docs, style, refactor, test, chore
 
+  # Review branch names
   branchName:
     enabled: true
-    pattern: '^(feature|bugfix|hotfix|release)/[A-Z]+-[0-9]+-.+'
-    prompt: |
-      Verify branch name follows the pattern:
-      <type>/<ticket-id>-<description>
-      Types: feature, bugfix, hotfix, release
+    pattern: "^(feature|bugfix|hotfix)/[A-Z]+-[0-9]+-\\w+"
 
+  # Review code changes
   codeChanges:
     enabled: true
-    prompt: |
-      Review the code changes for:
-      1. Code style and formatting
-      2. Potential bugs and issues
-      3. Performance considerations
-      4. Security vulnerabilities
-      5. Best practices compliance
+    filePatterns:
+      - '**/*.{ts,tsx,js,jsx}' # Files to review
+      - '!**/dist/**' # Files to ignore
 ```
 
-## Command Line Usage
+## Features
 
-```bash
-# Initialize configuration
-review-copilot init
+- 🔍 AI-powered code review
+- ✅ Commit message validation
+- 🌿 Branch name checking
+- 📝 Code style verification
+- 🎯 File pattern filtering
+- 🤖 Multiple AI providers (OpenAI, DeepSeek)
 
-# Review current changes
-review-copilot review
+## File Filtering
 
-# Show help
-review-copilot --help
-```
-
-## Environment Variables
-
-Configure your AI provider API keys in `.env`:
-
-```bash
-# OpenAI
-AI_API_KEY_OPENAI=your-openai-api-key
-
-# DeepSeek
-AI_API_KEY_DEEPSEEK=your-deepseek-api-key
-```
-
-## Supported AI Providers
-
-Currently supported AI providers:
-
-- OpenAI (GPT-3.5, GPT-4)
-- DeepSeek
-
-Configure your preferred provider in `.review-copilot.yaml`:
+Control which files to review using glob patterns:
 
 ```yaml
-ai:
-  provider: openai # or deepseek
-  apiKey: ${AI_API_KEY_OPENAI} # Use corresponding env variable
-  model: gpt-4 # Provider-specific model
+filePatterns:
+  - '**/*.ts' # Review all TypeScript files
+  - '!**/test/**' # Ignore test files
+  - '!**/dist/**' # Ignore build output
 ```
-
-## Contributing
-
-We welcome contributions! Please feel free to submit a Pull Request.
 
 ## License
 
-MIT License - see the [LICENSE](LICENSE) file for details.
+MIT
