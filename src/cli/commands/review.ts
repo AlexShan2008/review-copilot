@@ -8,8 +8,8 @@ import {
   getCurrentBranchName,
   getCurrentCommitMessage,
 } from '../../utils/git';
-import { GitHubService } from '../../services/github-service';
 import micromatch from 'micromatch';
+import { GitPlatformFactory } from '../../services/git-platform-factory';
 
 interface ReviewCommandOptions {
   config: string;
@@ -152,24 +152,22 @@ export async function reviewCommand(
 
       const comment = formatReviewComment(results);
 
-      if (process.env.GITHUB_ACTIONS === 'true') {
-        const githubToken = process.env.GITHUB_TOKEN;
-        if (!githubToken) {
-          throw new Error('GITHUB_TOKEN is required in CI environment');
-        }
-
-        const github = new GitHubService(githubToken);
-        const prDetails = await github.getPRDetails();
+      if (
+        process.env.GITHUB_ACTIONS === 'true' ||
+        process.env.GITLAB_CI === 'true'
+      ) {
+        const gitService = GitPlatformFactory.createService();
+        const prDetails = await gitService.getPRDetails();
 
         if (prDetails) {
-          spinner.text = 'Posting review comments to GitHub PR...';
-          await github.addPRComment(
+          spinner.text = 'Posting review comments...';
+          await gitService.addPRComment(
             prDetails.owner,
             prDetails.repo,
             prDetails.prNumber,
             comment,
           );
-          spinner.succeed('Review comments posted to GitHub PR');
+          spinner.succeed('Review comments posted');
         }
       } else {
         displayResults(results);

@@ -1,0 +1,11 @@
+review:
+  image: node:18
+  script:
+    - npm install -g pnpm
+    - pnpm install
+    - pnpm build
+    - node -r dotenv/config dist/cli/index.js review
+  only:
+    - merge_requests
+  variables:
+    GITLAB_TOKEN: $GITLAB_TOKEN

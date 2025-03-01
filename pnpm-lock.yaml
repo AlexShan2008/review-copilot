@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@gitbeaker/rest':
+        specifier: ^42.1.0
+        version: 42.1.0
       '@octokit/rest':
         specifier: ^20.0.2
         version: 20.1.1
@@ -295,6 +298,18 @@ packages:
   '@eslint/plugin-kit@0.2.5':
     resolution: {integrity: sha512-lB05FkqEdUg2AA0xEbUz0SnkXT1LcCTa438W4IWTUh4hdOnVbQyOJ81OrDXsJk/LSiJHubgGEFoR5EHq1NsH1A==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@gitbeaker/core@42.1.0':
+    resolution: {integrity: sha512-xoP3mUjiGyUdN+utmQ+wDh9r7b4bcf3wa8jxkDTZTiuyd7Tg+354nJhwBNBsq2vFfyQvONOyOT1hsFjTGbTpBA==}
+    engines: {node: '>=18.20.0'}
+
+  '@gitbeaker/requester-utils@42.1.0':
+    resolution: {integrity: sha512-q5NXy563UUM2AisM/V6Z3A92hIVQNMyx/VBj5Mg7gJkEtIYL+pEyibjIQxcq6nQ3bnj6bkM8NYguCs5tg7GR0Q==}
+    engines: {node: '>=18.20.0'}
+
+  '@gitbeaker/rest@42.1.0':
+    resolution: {integrity: sha512-7eSXktkUEF2O2A3F1cO/ZJ/3Mco4v59rptghzhrvjZryPcAxlYWxNJbuFtjc5bc0OnJW7i5AYfJSYvZQSh3gYg==}
+    engines: {node: '>=18.20.0'}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -2331,6 +2346,10 @@ packages:
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
 
+  picomatch-browser@2.2.6:
+    resolution: {integrity: sha512-0ypsOQt9D4e3hziV8O4elD9uN0z/jtUEfxVRtNaAAtXIyUx9m/SzlO020i8YNL2aL/E6blOvvHQcin6HZlFy/w==}
+    engines: {node: '>=8.6'}
+
   picomatch@2.3.1:
     resolution: {integrity: sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA==}
     engines: {node: '>=8.6'}
@@ -2399,12 +2418,19 @@ packages:
 
       (For a CapTP with native promises, see @endo/eventual-send and @endo/captp)
 
+  qs@6.14.0:
+    resolution: {integrity: sha512-YWWTjgABSKcvs/nWBi9PycY/JiPJqOD4JA6o9Sej2AtvSGarXxKC3OQSk4pAarbdQlKAh5D4FCQkJNkW+GAn3w==}
+    engines: {node: '>=0.6'}
+
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
 
   quick-lru@4.0.1:
     resolution: {integrity: sha512-ARhCpm70fzdcvNQfPoy49IaanKkTlRWF2JMzqhcJbhSFRZv7nPTvZJdcY7301IPmvW+/p0RgIWnQDLJxifsQ7g==}
     engines: {node: '>=8'}
+
+  rate-limiter-flexible@4.0.1:
+    resolution: {integrity: sha512-2/dGHpDFpeA0+755oUkW+EKyklqLS9lu0go9pDsbhqQjZcxfRyJ6LA4JI0+HAdZ2bemD/oOjUeZQB2lCZqXQfQ==}
 
   react-is@18.3.1:
     resolution: {integrity: sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==}
@@ -2934,6 +2960,9 @@ packages:
     resolution: {integrity: sha512-7KxauUdBmSdWnmpaGFg+ppNjKF8uNLry8LyzjauQDOVONfFLNKrKvQOxZ/VuTIcS/gge/YNahf5RIIQWTSarlg==}
     engines: {node: ^12.13.0 || ^14.15.0 || >=16.0.0}
 
+  xcase@2.0.1:
+    resolution: {integrity: sha512-UmFXIPU+9Eg3E9m/728Bii0lAIuoc+6nbrNUKaRPJOFp91ih44qqGlWtxMB6kXFrRD6po+86ksHM5XHCfk6iPw==}
+
   xtend@4.0.2:
     resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
     engines: {node: '>=0.4'}
@@ -3219,6 +3248,24 @@ snapshots:
     dependencies:
       '@eslint/core': 0.10.0
       levn: 0.4.1
+
+  '@gitbeaker/core@42.1.0':
+    dependencies:
+      '@gitbeaker/requester-utils': 42.1.0
+      qs: 6.14.0
+      xcase: 2.0.1
+
+  '@gitbeaker/requester-utils@42.1.0':
+    dependencies:
+      picomatch-browser: 2.2.6
+      qs: 6.14.0
+      rate-limiter-flexible: 4.0.1
+      xcase: 2.0.1
+
+  '@gitbeaker/rest@42.1.0':
+    dependencies:
+      '@gitbeaker/core': 42.1.0
+      '@gitbeaker/requester-utils': 42.1.0
 
   '@humanfs/core@0.19.1': {}
 
@@ -5721,6 +5768,8 @@ snapshots:
 
   picocolors@1.1.1: {}
 
+  picomatch-browser@2.2.6: {}
+
   picomatch@2.3.1: {}
 
   pidtree@0.6.0: {}
@@ -5764,9 +5813,15 @@ snapshots:
 
   q@1.5.1: {}
 
+  qs@6.14.0:
+    dependencies:
+      side-channel: 1.1.0
+
   queue-microtask@1.2.3: {}
 
   quick-lru@4.0.1: {}
+
+  rate-limiter-flexible@4.0.1: {}
 
   react-is@18.3.1: {}
 
@@ -6381,6 +6436,8 @@ snapshots:
     dependencies:
       imurmurhash: 0.1.4
       signal-exit: 3.0.7
+
+  xcase@2.0.1: {}
 
   xtend@4.0.2: {}
 

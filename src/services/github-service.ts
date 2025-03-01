@@ -1,13 +1,16 @@
 import { Octokit } from '@octokit/rest';
 import fs from 'fs';
+import {
+  IGitPlatformService,
+  GitPlatformDetails,
+} from './git-platform.interface';
+import { execSync } from 'child_process';
 
-export class GitHubService {
-  private octokit: Octokit;
+export class GitHubService implements IGitPlatformService {
+  private client: Octokit;
 
   constructor(token: string) {
-    this.octokit = new Octokit({
-      auth: token,
-    });
+    this.client = new Octokit({ auth: token });
   }
 
   async addPRComment(
@@ -16,7 +19,7 @@ export class GitHubService {
     prNumber: number,
     body: string,
   ): Promise<void> {
-    await this.octokit.issues.createComment({
+    await this.client.issues.createComment({
       owner,
       repo,
       issue_number: prNumber,
@@ -24,11 +27,7 @@ export class GitHubService {
     });
   }
 
-  async getPRDetails(): Promise<{
-    owner: string;
-    repo: string;
-    prNumber: number;
-  } | null> {
+  async getPRDetails(): Promise<GitPlatformDetails | null> {
     if (process.env.GITHUB_EVENT_PATH) {
       try {
         const eventData = JSON.parse(
@@ -40,6 +39,7 @@ export class GitHubService {
             owner: eventData.repository.owner.login,
             repo: eventData.repository.name,
             prNumber: eventData.pull_request.number,
+            platform: 'github',
           };
         }
       } catch (error) {
@@ -51,9 +51,22 @@ export class GitHubService {
     const prNumber = parseInt(process.env.GITHUB_EVENT_NUMBER || '', 10);
 
     if (owner && repo && !isNaN(prNumber)) {
-      return { owner, repo, prNumber };
+      return {
+        owner,
+        repo,
+        prNumber,
+        platform: 'github',
+      };
     }
 
     return null;
+  }
+
+  async getCurrentBranch(): Promise<string> {
+    return execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
+  }
+
+  async getCommitMessage(): Promise<string> {
+    return execSync('git log -1 --pretty=%B').toString().trim();
   }
 }
