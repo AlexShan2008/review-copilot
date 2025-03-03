@@ -1,30 +1,10 @@
-import OpenAI from 'openai';
+import { AIProviderConfig } from '../types';
+import { BaseProvider } from './base-provider';
 import chalk from 'chalk';
-import { AIProviderConfig, IAIProvider } from '../types';
-import { ChatCompletionMessageParam, ChatCompletion } from 'openai/resources';
 
-export class DeepSeekProvider implements IAIProvider {
-  private client: OpenAI;
-  private config: AIProviderConfig;
-
+export class DeepSeekProvider extends BaseProvider {
   constructor(config: AIProviderConfig) {
-    this.config = config;
-    console.log(chalk.blue('Initializing DeepSeek provider with config:'), {
-      model: config.model,
-      baseURL: config.baseURL,
-      apiKey: config.apiKey ? '***' + config.apiKey.slice(-4) : undefined,
-    });
-
-    this.client = new OpenAI({
-      apiKey: config.apiKey,
-      baseURL: config.baseURL,
-      defaultHeaders: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${config.apiKey}`,
-      },
-      defaultQuery: undefined,
-      timeout: 60_1000,
-    });
+    super(config);
   }
 
   private formatContent(prompt: string, content: string): string {

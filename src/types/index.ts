@@ -47,6 +47,8 @@ export interface AIProviderConfig {
   provider: AIProviderType;
   baseURL?: string;
   model: string;
+  defaultHeaders?: Record<string, string>;
+  timeout?: number;
 }
 
 export interface IAIProvider {

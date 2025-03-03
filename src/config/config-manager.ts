@@ -3,13 +3,25 @@ import { parse } from 'yaml';
 import { z } from 'zod';
 import { Config } from '../types';
 
+const providerSchema = z.object({
+  enabled: z.boolean(),
+  apiKey: z.string(),
+  model: z.string(),
+  baseURL: z.string(),
+  defaultHeaders: z.record(z.string()).optional(),
+  timeout: z.number().optional(),
+});
+
 const configSchema = z.object({
-  ai: z.object({
-    provider: z.enum(['openai', 'deepseek']),
-    apiKey: z.string(),
-    model: z.string(),
-    baseURL: z.string().optional(),
-  }),
+  providers: z.record(providerSchema),
+  ai: z
+    .object({
+      provider: z.enum(['openai', 'deepseek']),
+      apiKey: z.string(),
+      model: z.string(),
+      baseURL: z.string().optional(),
+    })
+    .optional(),
   triggers: z.array(
     z.object({
       on: z.enum(['pull_request', 'merge_request', 'push']),
@@ -29,6 +41,7 @@ const configSchema = z.object({
     }),
     codeChanges: z.object({
       enabled: z.boolean(),
+      filePatterns: z.array(z.string()).optional(),
       prompt: z.string(),
     }),
   }),
