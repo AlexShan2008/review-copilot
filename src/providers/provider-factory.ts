@@ -5,12 +5,20 @@ import chalk from 'chalk';
 
 export class ProviderFactory {
   static createProvider(config: Config): IAIProvider {
+    if (!config.providers) {
+      throw new Error(
+        'No providers configuration found. Please update your configuration to use the new format.',
+      );
+    }
+
     const enabledProviders = Object.entries(config.providers).filter(
       ([_, providerConfig]) => providerConfig.enabled,
     );
 
     if (enabledProviders.length === 0) {
-      throw new Error('No AI provider is enabled in the configuration');
+      throw new Error(
+        'No AI provider is enabled in the configuration. Please enable one provider in the providers section.',
+      );
     }
 
     if (enabledProviders.length > 1) {
@@ -21,12 +29,20 @@ export class ProviderFactory {
 
     const [providerName, providerConfig] = enabledProviders[0];
     console.log(chalk.blue(`Using ${providerName} as AI provider`));
+    console.log(chalk.gray('Provider config:'), {
+      ...providerConfig,
+      apiKey: providerConfig.apiKey
+        ? '***' + providerConfig.apiKey.slice(-4)
+        : undefined,
+    });
 
     const { enabled, ...providerSettings } = providerConfig;
     const settings = {
       ...providerSettings,
       provider: providerName.toLowerCase() as AIProviderType,
     };
+
+    this.validateProviderConfig(providerName, settings);
 
     switch (providerName.toLowerCase()) {
       case 'openai':
@@ -43,7 +59,6 @@ export class ProviderFactory {
       throw new Error('No providers configuration found');
     }
 
-    // 验证每个 provider 的配置
     Object.entries(config.providers).forEach(([name, providerConfig]) => {
       if (providerConfig.enabled) {
         this.validateProviderConfig(name, providerConfig);

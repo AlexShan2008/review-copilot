@@ -43,6 +43,9 @@ rules:
       - '**/*.{js,jsx}'
       - '!**/dist/**'
       - '!**/node_modules/**'
+      - '!**/package-lock.json'
+      - '!**/yarn.lock'
+      - '!**/pnpm-lock.yaml'
     prompt: |
       Review the code changes for:
       1. Code style and formatting
