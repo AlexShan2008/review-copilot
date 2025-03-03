@@ -73,60 +73,24 @@ export async function reviewCommand(
 
     if (!changes.length) {
       spinner.info(chalk.yellow('No changes to review.'));
+      spinner.succeed('Review completed');
       return true;
     }
 
     spinner.text = 'Analyzing changes...';
-
     const results: ReviewResult[] = [];
-
-    // Review commit message if enabled
-    if (config.rules.commitMessage.enabled) {
-      const commitMessage = await getCurrentCommitMessage();
-      await processReview(
-        aiProvider,
-        config.rules.commitMessage.prompt,
-        commitMessage,
-        'Commit Message',
-        results,
-      );
-    }
-
-    // Review branch name if enabled
-    if (config.rules.branchName.enabled) {
-      const branchName = await getCurrentBranchName();
-      await processReview(
-        aiProvider,
-        config.rules.branchName.prompt,
-        branchName,
-        'Branch Name',
-        results,
-      );
-    }
 
     // Review code changes if enabled
     if (config.rules.codeChanges.enabled) {
       const patterns = config.rules.codeChanges.filePatterns ?? [
         '**/*.{ts,tsx,js,jsx}',
       ];
-      console.log('File patterns:', patterns);
-      console.log(
-        'Changes:',
-        changes.map((c) => c.file),
-      );
 
       const filteredChanges = changes.filter((change) =>
         micromatch.isMatch(change.file, patterns, { dot: true }),
       );
 
-      console.log(
-        'Filtered changes:',
-        filteredChanges.map((c) => c.file),
-      );
-
-      if (filteredChanges.length === 0) {
-        spinner.info(chalk.yellow('No matching files to review.'));
-      } else {
+      if (filteredChanges.length > 0) {
         const combinedContent = filteredChanges
           .map((change) => `File: ${change.file}\n${change.content}\n`)
           .join('\n---\n\n');
@@ -141,12 +105,38 @@ export async function reviewCommand(
       }
     }
 
-    // Display results only if there are any errors
+    // Review commit message if enabled
+    if (config.rules.commitMessage.enabled) {
+      const commitMessage = await getCurrentCommitMessage();
+      if (commitMessage) {
+        await processReview(
+          aiProvider,
+          config.rules.commitMessage.prompt,
+          commitMessage,
+          'Commit Message',
+          results,
+        );
+      }
+    }
+
+    // Review branch name if enabled
+    if (config.rules.branchName.enabled) {
+      const branchName = await getCurrentBranchName();
+      if (branchName) {
+        await processReview(
+          aiProvider,
+          config.rules.branchName.prompt,
+          branchName,
+          'Branch Name',
+          results,
+        );
+      }
+    }
+
+    // Display results
     spinner.stop();
     if (results.length > 0) {
       displayResults(results);
-
-      const comment = formatReviewComment(results);
 
       if (
         process.env.GITHUB_ACTIONS === 'true' ||
@@ -161,13 +151,13 @@ export async function reviewCommand(
             prDetails.owner,
             prDetails.repo,
             prDetails.prNumber,
-            comment,
+            formatReviewComment(results),
           );
           spinner.succeed('Review comments posted');
         }
-      } else {
-        displayResults(results);
       }
+    } else {
+      spinner.succeed('No issues found');
     }
 
     return true;
@@ -178,12 +168,19 @@ export async function reviewCommand(
       console.error(chalk.red('\nError details:'));
       console.error(chalk.yellow('Message:'), error.message);
 
-      const errorObj = JSON.parse(error.message.split('Details: ')[1] || '{}');
-      if (errorObj.error) {
-        console.error(chalk.yellow('\nOpenAI Error:'));
-        console.error(chalk.gray('Type:'), errorObj.error.type);
-        console.error(chalk.gray('Code:'), errorObj.error.code);
-        console.error(chalk.gray('Message:'), errorObj.error.message);
+      try {
+        const errorDetails = error.message.split('Details: ')[1];
+        if (errorDetails) {
+          const errorObj = JSON.parse(errorDetails);
+          if (errorObj.error) {
+            console.error(chalk.yellow('\nOpenAI Error:'));
+            console.error(chalk.gray('Type:'), errorObj.error.type);
+            console.error(chalk.gray('Code:'), errorObj.error.code);
+            console.error(chalk.gray('Message:'), errorObj.error.message);
+          }
+        }
+      } catch (parseError) {
+        // Ignore JSON parse errors for non-OpenAI errors
       }
 
       if (error.stack) {
