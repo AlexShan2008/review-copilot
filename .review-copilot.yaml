@@ -39,13 +39,20 @@ rules:
   codeChanges:
     enabled: true
     filePatterns:
+      # Include patterns
       - '**/*.{ts,tsx}'
       - '**/*.{js,jsx}'
+      # Exclude patterns
+      - '!package-lock.json'
+      - '!**/package-lock.json'
+      - '!yarn.lock'
+      - '!**/yarn.lock'
+      - '!pnpm-lock.yaml'
+      - '!**/pnpm-lock.yaml'
       - '!**/dist/**'
       - '!**/node_modules/**'
-      - '!**/package-lock.json'
-      - '!**/yarn.lock'
-      - '!**/pnpm-lock.yaml'
+      - '!**/*.min.js'
+      - '!**/*.bundle.js'
     prompt: |
       Review the code changes for:
       1. Code style and formatting
