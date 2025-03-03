@@ -13,8 +13,14 @@ export interface AIProviderConfig extends BaseProviderConfig {
   provider: AIProviderType;
 }
 
-export interface ProviderConfig extends BaseProviderConfig {
-  enabled: boolean;
+export interface ProviderConfig {
+  enabled?: boolean;
+  apiKey: string;
+  model: string;
+  baseURL: string;
+  defaultHeaders?: Record<string, string>;
+  timeout?: number;
+  provider?: AIProviderType;
 }
 
 export type ProvidersConfig = Record<string, ProviderConfig>;
