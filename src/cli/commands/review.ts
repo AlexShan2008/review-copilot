@@ -86,19 +86,67 @@ export async function reviewCommand(
         '**/*.{ts,tsx,js,jsx}',
       ];
 
-      const filteredChanges = changes.filter((change) =>
-        micromatch.isMatch(change.file, patterns, { dot: true }),
-      );
+      const filteredChanges = changes.filter((change) => {
+        const isIgnored = patterns
+          .filter((pattern) => pattern.startsWith('!'))
+          .some((pattern) => {
+            const cleanPattern = pattern.slice(1);
+            return micromatch.isMatch(change.file, cleanPattern, { dot: true });
+          });
+
+        if (isIgnored) {
+          console.log(chalk.yellow(`Ignoring file: ${change.file}`));
+          return false;
+        }
+
+        const isIncluded = patterns
+          .filter((pattern) => !pattern.startsWith('!'))
+          .some((pattern) =>
+            micromatch.isMatch(change.file, pattern, { dot: true }),
+          );
+
+        if (!isIncluded) {
+          console.log(
+            chalk.yellow(`File not matching include patterns: ${change.file}`),
+          );
+        }
+
+        return isIncluded;
+      });
+
+      console.log(chalk.blue('\nFiles to review:'));
+      filteredChanges.forEach((change) => {
+        console.log(
+          chalk.gray(`- ${change.file} (${change.content.length} bytes)`),
+        );
+      });
 
       if (filteredChanges.length > 0) {
-        const combinedContent = filteredChanges
+        const MAX_FILE_SIZE = 50000;
+        const truncatedChanges = filteredChanges.map((change) => ({
+          ...change,
+          content:
+            change.content.length > MAX_FILE_SIZE
+              ? change.content.slice(0, MAX_FILE_SIZE) +
+                '\n... (content truncated for size limit)'
+              : change.content,
+        }));
+
+        const combinedContent = truncatedChanges
           .map((change) => `File: ${change.file}\n${change.content}\n`)
           .join('\n---\n\n');
+
+        const MAX_TOTAL_SIZE = 100000;
+        const finalContent =
+          combinedContent.length > MAX_TOTAL_SIZE
+            ? combinedContent.slice(0, MAX_TOTAL_SIZE) +
+              '\n... (content truncated for total size limit)'
+            : combinedContent;
 
         await processReview(
           aiProvider,
           config.rules.codeChanges.prompt,
-          combinedContent,
+          finalContent,
           'Code',
           results,
         );
