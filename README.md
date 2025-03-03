@@ -35,37 +35,81 @@ review-copilot review
 `.review-copilot.yaml` example:
 
 ```yaml
-ai:
-  provider: openai # or deepseek
-  model: gpt-4 # or gpt-3.5-turbo
+# AI Provider Configuration
+providers:
+  openai:
+    enabled: true
+    apiKey: ${AI_API_KEY_OPENAI}
+    model: gpt-4-turbo-preview
+    baseURL: https://api.openai.com/v1
 
+  deepseek:
+    enabled: false
+    apiKey: ${AI_API_KEY_DEEPSEEK}
+    model: deepseek-chat
+    baseURL: https://api.deepseek.com/v1
+
+# Review Triggers
+triggers:
+  - on: pull_request
+  - on: merge_request
+  - on: push
+
+# Code Review Rules
 rules:
   # Review commit messages
   commitMessage:
     enabled: true
-    pattern: "^(feat|fix|docs|style|refactor|test|chore)(\\(.+\\))?: .{1,50}"
+    pattern: '^(feat|fix|docs|style|refactor|test|chore|ci)(\\(.+\\))?: .{1,50}'
+    prompt: |
+      Review this commit message and ensure it follows conventional commits format.
+      Format: <type>(<scope>): <description>
+      Types: feat, fix, docs, style, refactor, test, chore, ci
 
   # Review branch names
   branchName:
     enabled: true
-    pattern: "^(feature|bugfix|hotfix)/[A-Z]+-[0-9]+-\\w+"
+    pattern: '^(feature|bugfix|hotfix|release)/[A-Z]+-[0-9]+-.+'
+    prompt: |
+      Verify branch name follows the pattern:
+      <type>/<ticket-id>-<description>
+      Types: feature, bugfix, hotfix, release
 
   # Review code changes
   codeChanges:
     enabled: true
     filePatterns:
-      - '**/*.{ts,tsx,js,jsx}' # Files to review
-      - '!**/dist/**' # Files to ignore
+      - '**/*.{ts,tsx}'
+      - '**/*.{js,jsx}'
+      - '!**/dist/**'
+      - '!**/node_modules/**'
+    prompt: |
+      Review the code changes for:
+      1. Code style and formatting
+      2. Potential bugs and issues
+      3. Performance considerations
+      4. Security vulnerabilities
+      5. Best practices compliance
+
+# Custom Review Points
+customReviewPoints:
+  - name: 'Security Check'
+    prompt: 'Review code for security vulnerabilities...'
+  - name: 'Performance Review'
+    prompt: 'Analyze code for performance bottlenecks...'
 ```
 
 ## Features
 
-- 🔍 AI-powered code review
-- ✅ Commit message validation
-- 🌿 Branch name checking
-- 📝 Code style verification
-- 🎯 File pattern filtering
+- 🔍 AI-powered code review with multiple provider support
+- 🔄 Environment variable substitution in configuration
+- ✅ Conventional commit message validation
+- 🌿 Branch name pattern checking
+- 📝 Customizable review prompts
+- 🎯 Flexible file pattern filtering
 - 🤖 Multiple AI providers (OpenAI, DeepSeek)
+- 🔒 Secure API key handling
+- 🎨 Beautiful CLI interface with progress indicators
 
 ## File Filtering
 
@@ -76,7 +120,46 @@ filePatterns:
   - '**/*.ts' # Review all TypeScript files
   - '!**/test/**' # Ignore test files
   - '!**/dist/**' # Ignore build output
+  - '!**/node_modules/**' # Ignore dependencies
 ```
+
+## AI Provider Configuration
+
+You can configure multiple AI providers and enable the one you want to use:
+
+```yaml
+providers:
+  openai:
+    enabled: true
+    apiKey: ${AI_API_KEY_OPENAI}
+    model: gpt-4-turbo-preview
+    baseURL: https://api.openai.com/v1
+    # Optional settings
+    defaultHeaders:
+      'X-Custom-Header': 'value'
+    timeout: 60000
+
+  deepseek:
+    enabled: false
+    apiKey: ${AI_API_KEY_DEEPSEEK}
+    model: deepseek-chat
+    baseURL: https://api.deepseek.com/v1
+```
+
+## Environment Variables
+
+The configuration supports environment variable substitution using `${VAR_NAME}` syntax:
+
+```yaml
+providers:
+  openai:
+    apiKey: ${AI_API_KEY_OPENAI}
+    baseURL: ${OPENAI_API_BASE_URL}
+```
+
+## CI/CD Integration
+
+ReviewCopilot automatically detects CI environments (GitHub Actions, GitLab CI) and can post review comments directly on pull/merge requests.
 
 ## License
 
