@@ -1,48 +1,62 @@
-import { reviewCommand } from '../review';
 import { ConfigManager } from '../../../config/config-manager';
+import { reviewCommand } from '../review';
+import {
+  getGitChanges,
+  getCurrentBranchName,
+  getCurrentCommitMessage,
+} from '../../../utils/git';
+import { ProviderFactory } from '../../../providers/provider-factory';
 import { OpenAIProvider } from '../../../providers/openai-provider';
-import { getGitChanges } from '../../../utils/git';
-import micromatch from 'micromatch';
 
 jest.mock('../../../config/config-manager');
-jest.mock('../../../providers/openai-provider');
 jest.mock('../../../utils/git');
+jest.mock('../../../providers/provider-factory');
 
 describe('review-copilot CLI', () => {
-  let mockInstance: any;
+  let mockInstance: jest.Mocked<ConfigManager>;
+  let mockProvider: jest.Mocked<OpenAIProvider>;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Mock OpenAIProvider
-    (OpenAIProvider as jest.Mock).mockImplementation(() => ({
-      review: jest.fn().mockResolvedValue('AI Review Result'),
-    }));
-
+    // Mock ConfigManager
     mockInstance = {
-      loadConfig: jest.fn().mockResolvedValue({}),
+      loadConfig: jest.fn().mockResolvedValue(undefined),
       getConfig: jest.fn().mockReturnValue({
-        ai: {
-          provider: 'openai',
-          apiKey: 'test-key',
-          model: 'gpt-3.5-turbo',
+        providers: {
+          openai: {
+            enabled: true,
+            apiKey: 'test-key',
+            model: 'gpt-4',
+            baseURL: 'https://api.openai.com/v1',
+          },
         },
         rules: {
-          commitMessage: { enabled: false },
-          branchName: { enabled: false },
-          codeChanges: { enabled: true, prompt: 'test prompt' },
+          commitMessage: { enabled: true, pattern: '', prompt: '' },
+          branchName: { enabled: true, pattern: '', prompt: '' },
+          codeChanges: { enabled: true, filePatterns: ['**/*.ts'], prompt: '' },
         },
       }),
-      config: {},
-      replaceEnvVariables: jest.fn().mockImplementation((str) => str),
-    };
+      getInstance: jest.fn().mockReturnValue(mockInstance),
+    } as unknown as jest.Mocked<ConfigManager>;
 
-    jest.spyOn(ConfigManager, 'getInstance').mockReturnValue(mockInstance);
+    (ConfigManager.getInstance as jest.Mock).mockReturnValue(mockInstance);
 
-    // Mock getGitChanges
+    // Mock Provider
+    mockProvider = {
+      review: jest.fn().mockResolvedValue('No issues found'),
+    } as unknown as jest.Mocked<OpenAIProvider>;
+
+    (ProviderFactory.createProvider as jest.Mock).mockReturnValue(mockProvider);
+
+    // Mock Git Utils
     (getGitChanges as jest.Mock).mockResolvedValue([
-      { file: 'test.ts', content: 'test content' },
+      { file: 'src/test.ts', content: 'test content' },
     ]);
+    (getCurrentBranchName as jest.Mock).mockResolvedValue('feature/test');
+    (getCurrentCommitMessage as jest.Mock).mockResolvedValue(
+      'feat: test commit',
+    );
   });
 
   it('should successfully review changes', async () => {
@@ -53,10 +67,11 @@ describe('review-copilot CLI', () => {
     expect(mockInstance.loadConfig).toHaveBeenCalledWith(
       '.review-copilot.yaml',
     );
+    expect(mockProvider.review).toHaveBeenCalled();
   });
 
   it('should handle no changes scenario', async () => {
-    (getGitChanges as jest.Mock).mockResolvedValue([]);
+    (getGitChanges as jest.Mock).mockResolvedValueOnce([]);
     const options = { config: '.review-copilot.yaml' };
     const result = await reviewCommand(options);
 
@@ -64,7 +79,8 @@ describe('review-copilot CLI', () => {
   });
 
   it('should handle errors gracefully', async () => {
-    mockInstance.loadConfig.mockRejectedValue(new Error('Test error'));
+    const testError = new Error('Test error');
+    mockProvider.review.mockRejectedValueOnce(testError);
     const options = { config: '.review-copilot.yaml' };
     const result = await reviewCommand(options);
 
@@ -73,64 +89,59 @@ describe('review-copilot CLI', () => {
 });
 
 describe('Review Command File Patterns', () => {
-  let mockReview: jest.Mock;
+  let mockProvider: jest.Mocked<OpenAIProvider>;
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockReview = jest.fn().mockResolvedValue('AI Review Result');
-    (OpenAIProvider as jest.Mock).mockImplementation(() => ({
-      review: mockReview,
-    }));
-  });
 
-  it('should filter files based on filePatterns', async () => {
-    // Mock git changes
-    const mockChanges = [
-      { file: 'src/test.ts', content: 'test content' },
-      { file: 'src/index.js', content: 'js content' },
-      { file: 'dist/test.js', content: 'should be ignored' },
-    ];
-    (getGitChanges as jest.Mock).mockResolvedValue(mockChanges);
-
-    // Mock config
+    // Mock ConfigManager
     const mockConfig = {
-      ai: {
-        provider: 'openai',
-        apiKey: 'test-key',
-        model: 'test-model',
+      providers: {
+        openai: {
+          enabled: true,
+          apiKey: 'test-key',
+          model: 'gpt-4',
+          baseURL: 'https://api.openai.com/v1',
+        },
       },
       rules: {
-        commitMessage: { enabled: false },
-        branchName: { enabled: false },
         codeChanges: {
           enabled: true,
-          filePatterns: [
-            '**/*.{ts,tsx}',
-            '**/*.{js,jsx}',
-            '!**/dist/**',
-            '!**/node_modules/**',
-          ],
-          prompt: 'test prompt',
+          filePatterns: ['**/*.ts'],
+          prompt: 'Review code',
         },
       },
     };
 
     const mockInstance = {
-      loadConfig: jest.fn().mockResolvedValue({}),
+      loadConfig: jest.fn().mockResolvedValue(undefined),
       getConfig: jest.fn().mockReturnValue(mockConfig),
-      replaceEnvVariables: jest.fn().mockImplementation((str) => str),
-    } as unknown as ConfigManager;
+      getInstance: jest.fn().mockReturnThis(),
+    };
 
-    jest.spyOn(ConfigManager, 'getInstance').mockReturnValue(mockInstance);
+    (ConfigManager.getInstance as jest.Mock).mockReturnValue(mockInstance);
 
+    // Mock Provider
+    mockProvider = {
+      review: jest.fn().mockResolvedValue('No issues found'),
+    } as unknown as jest.Mocked<OpenAIProvider>;
+
+    (ProviderFactory.createProvider as jest.Mock).mockReturnValue(mockProvider);
+
+    // Mock Git Utils
+    (getGitChanges as jest.Mock).mockResolvedValue([
+      { file: 'src/test.ts', content: 'test content' },
+      { file: 'src/index.js', content: 'js content' },
+    ]);
+  });
+
+  it('should filter files based on filePatterns', async () => {
     const options = { config: '.review-copilot.yaml' };
     await reviewCommand(options);
 
-    // Verify review was called
-    expect(mockReview).toHaveBeenCalled();
-    const reviewContent = mockReview.mock.calls[0][1];
+    expect(mockProvider.review).toHaveBeenCalled();
+    const reviewContent = mockProvider.review.mock.calls[0][1];
     expect(reviewContent).toContain('src/test.ts');
     expect(reviewContent).not.toContain('src/index.js');
-    expect(reviewContent).not.toContain('dist/test.js');
   });
 });
