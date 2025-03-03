@@ -1,8 +1,8 @@
 import chalk from 'chalk';
 import ora from 'ora';
 import { ConfigManager } from '../../config/config-manager';
-import { AIProviderFactory } from '../../providers/ai-provider-factory';
-import { ReviewResult, AIProviderType } from '../../types';
+import { ProviderFactory } from '../../providers/provider-factory';
+import { ReviewResult } from '../../types';
 import {
   getGitChanges,
   getCurrentBranchName,
@@ -50,6 +50,7 @@ async function processReview(
       success: false,
       message: `${reviewType} Review`,
       suggestions: [result],
+      errors: [],
     });
   }
 }
@@ -65,12 +66,7 @@ export async function reviewCommand(
     const config = configManager.getConfig();
 
     spinner.text = 'Initializing AI provider...';
-    const aiProvider = AIProviderFactory.createProvider({
-      provider: config.ai.provider as AIProviderType,
-      apiKey: config.ai.apiKey,
-      baseURL: config.ai.baseURL,
-      model: config.ai.model,
-    });
+    const aiProvider = ProviderFactory.createProvider(config);
 
     spinner.text = 'Getting git changes...';
     const changes = await getGitChanges();
