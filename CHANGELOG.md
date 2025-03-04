@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.2](https://github.com/AlexShan2008/review-copilot/compare/v0.2.1...v0.2.2) (2025-03-04)
+
+
+### Features
+
+* add GitLab AI review for branch name & commit message ([2547cd8](https://github.com/AlexShan2008/review-copilot/commit/2547cd8e6f2197d4d7158f6b6fdb10e92d757204))
+* support OpenAI ([8e0fced](https://github.com/AlexShan2008/review-copilot/commit/8e0fcede48759c711b00d57a1b9792aeec3ab844))
+
+
+### Bug Fixes
+
+* prevent token limit exceeded by large files ([28af1e8](https://github.com/AlexShan2008/review-copilot/commit/28af1e80e1c75f752f261a384aceb5f161fa2284))
+
+
+### Documentation
+
+* update README.md ([356f828](https://github.com/AlexShan2008/review-copilot/commit/356f8286469479063358fd814bb25b422fec3fc2))
+
+
+### Tests
+
+* update the test cases based on the new feature ([c618cb1](https://github.com/AlexShan2008/review-copilot/commit/c618cb1f44bd9b7c92251feefbecdf5d7a67163a))
+
 ### [0.2.1](https://github.com/AlexShan2008/review-copilot/compare/v0.2.0...v0.2.1) (2025-02-23)
 
 
