@@ -1,6 +1,7 @@
 import { AIProviderConfig } from '../types';
 import { BaseProvider } from './base-provider';
 import chalk from 'chalk';
+import { SYSTEM_MESSAGES } from '../constants/ai-messages';
 
 export class DeepSeekProvider extends BaseProvider {
   constructor(config: AIProviderConfig) {
@@ -32,8 +33,7 @@ export class DeepSeekProvider extends BaseProvider {
         messages: [
           {
             role: 'system' as const,
-            content:
-              'You are a professional code reviewer. Provide clear, concise, and actionable feedback.',
+            content: SYSTEM_MESSAGES.CODE_REVIEW,
           },
           {
             role: 'user' as const,

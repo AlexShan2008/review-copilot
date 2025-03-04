@@ -4,6 +4,7 @@ import { BaseProvider } from './base-provider';
 import chalk from 'chalk';
 import { ChatCompletionMessageParam } from 'openai/resources';
 import util from 'util';
+import { SYSTEM_MESSAGES } from '../constants/ai-messages';
 
 export class OpenAIProvider extends BaseProvider {
   constructor(config: AIProviderConfig) {
@@ -31,8 +32,7 @@ export class OpenAIProvider extends BaseProvider {
       const messages: ChatCompletionMessageParam[] = [
         {
           role: 'system',
-          content:
-            'You are a professional code reviewer. Provide clear, concise, and actionable feedback.',
+          content: SYSTEM_MESSAGES.CODE_REVIEW,
         },
         {
           role: 'user',
