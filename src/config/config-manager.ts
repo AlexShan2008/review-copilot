@@ -10,6 +10,7 @@ const providerSchema = z.object({
   baseURL: z.string(),
   defaultHeaders: z.record(z.string()).optional(),
   timeout: z.number().optional(),
+  reviewLanguage: z.enum(['en', 'zh', 'ja', 'ko']).optional(),
 });
 
 const configSchema = z.object({
@@ -20,6 +21,7 @@ const configSchema = z.object({
       apiKey: z.string(),
       model: z.string(),
       baseURL: z.string().optional(),
+      reviewLanguage: z.enum(['en', 'zh']).optional(),
     })
     .optional(),
   triggers: z.array(

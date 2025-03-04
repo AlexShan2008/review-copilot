@@ -33,7 +33,7 @@ export class DeepSeekProvider extends BaseProvider {
         messages: [
           {
             role: 'system' as const,
-            content: SYSTEM_MESSAGES.CODE_REVIEW,
+            content: SYSTEM_MESSAGES.CODE_REVIEW(this.config.reviewLanguage),
           },
           {
             role: 'user' as const,
