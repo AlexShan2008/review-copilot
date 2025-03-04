@@ -1,3 +1,5 @@
+import { ReviewLanguage } from './constants/ai-messages';
+
 // Provider related types
 export type AIProviderType = 'openai' | 'deepseek';
 
@@ -11,6 +13,7 @@ export interface BaseProviderConfig {
 
 export interface AIProviderConfig extends BaseProviderConfig {
   provider: AIProviderType;
+  reviewLanguage?: ReviewLanguage;
 }
 
 export interface ProviderConfig {
