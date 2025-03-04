@@ -30,6 +30,18 @@ function hasReviewSuggestions(result: string): boolean {
     /must be/i,
     /expected/i,
     /invalid/i,
+    /不符合/i,
+    /问题/i,
+    /警告/i,
+    /错误/i,
+    /建议/i,
+    /推荐/i,
+    /考虑/i,
+    /应该/i,
+    /必须/i,
+    /需要/i,
+    /可以/i,
+    /最好/i,
   ];
 
   return suggestionPatterns.some((pattern) =>

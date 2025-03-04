@@ -32,7 +32,7 @@ export class OpenAIProvider extends BaseProvider {
       const messages: ChatCompletionMessageParam[] = [
         {
           role: 'system',
-          content: SYSTEM_MESSAGES.CODE_REVIEW,
+          content: SYSTEM_MESSAGES.CODE_REVIEW(this.config.reviewLanguage),
         },
         {
           role: 'user',

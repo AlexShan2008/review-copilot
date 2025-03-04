@@ -1,16 +1,17 @@
 # AI Provider Configuration
 providers:
   openai:
-    enabled: true
+    enabled: false
     apiKey: ${AI_API_KEY_OPENAI}
     model: gpt-4-turbo-preview
     baseURL: https://chat.rightcapital.ai/v1
 
   deepseek:
-    enabled: false
+    enabled: true
     apiKey: ${AI_API_KEY_DEEPSEEK}
     model: deepseek-chat
     baseURL: https://api.deepseek.com/v1
+    reviewLanguage: 'zh'
 
 # Review Triggers
 triggers:
