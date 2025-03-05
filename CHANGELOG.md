@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.3](https://github.com/AlexShan2008/review-copilot/compare/v0.2.2...v0.2.3) (2025-03-05)
+
+
+### Features
+
+* add celebration message for successful code reviews ([55dd548](https://github.com/AlexShan2008/review-copilot/commit/55dd548daac869b52abadef3f3b6944aa81bbb6b))
+* **config:** support customize review comment lanugage ([bf65838](https://github.com/AlexShan2008/review-copilot/commit/bf658382ddf35b71114d91758de2c7539d7b8b08))
+
+
+### Refactors
+
+* centralize and improve AI review system prompts ([77b0936](https://github.com/AlexShan2008/review-copilot/commit/77b09366853393acacb8365d64372d8dd945b3bb))
+
 ### [0.2.2](https://github.com/AlexShan2008/review-copilot/compare/v0.2.1...v0.2.2) (2025-03-04)
 
 
