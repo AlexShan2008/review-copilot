@@ -258,6 +258,17 @@ export async function reviewCommand(
 function displayResults(results: ReviewResult[]): void {
   console.log('\n📝 Review Results:\n');
 
+  const allPassed = results.every(
+    (result) =>
+      result.success &&
+      (!result.suggestions || result.suggestions.length === 0) &&
+      (!result.errors || result.errors.length === 0),
+  );
+
+  if (allPassed) {
+    console.log(chalk.green('🎉 All checks passed! Code looks great!\n'));
+  }
+
   results.forEach((result) => {
     const icon = result.success ? '✅' : '❌';
     console.log(`${icon} ${chalk.bold(result.message)}`);
