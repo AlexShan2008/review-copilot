@@ -3,7 +3,6 @@
 import { Command } from 'commander';
 import { initCommand } from './commands/init';
 import { reviewCommand } from './commands/review';
-import { program } from 'commander';
 import { version } from '../../package.json';
 
 const program = new Command();
