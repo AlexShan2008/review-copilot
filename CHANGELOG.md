@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.4](https://github.com/AlexShan2008/review-copilot/compare/v0.2.3...v0.2.4) (2025-03-06)
+
+
+### ⚠ BREAKING CHANGES
+
+* The version script now includes sync-version step
+
+### Features
+
+* improve CLI version management ([9e93e2c](https://github.com/AlexShan2008/review-copilot/commit/9e93e2cb1e9d42c32aa5bae0e438ee0a2ff3c8c2))
+
+
+### Bug Fixes
+
+* sync CLI version with package.json ([41c7ba2](https://github.com/AlexShan2008/review-copilot/commit/41c7ba249d22c762a2a5304d820990b09fe384db))
+
 ### [0.2.3](https://github.com/AlexShan2008/review-copilot/compare/v0.2.2...v0.2.3) (2025-03-05)
 
 
