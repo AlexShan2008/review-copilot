@@ -20,7 +20,7 @@
     "format": "prettier --write 'src/**/*.{js,ts}'",
     "prepare": "husky install",
     "prepublishOnly": "pnpm run build",
-    "version": "standard-version",
+    "version": "tsx scripts/sync-version.ts && npm run build",
     "release": "standard-version --release-as patch && git push --follow-tags && pnpm publish",
     "release:minor": "standard-version --release-as minor && git push --follow-tags && pnpm publish",
     "release:major": "standard-version --release-as major && git push --follow-tags && pnpm publish",
