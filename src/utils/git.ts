@@ -1,5 +1,6 @@
 import simpleGit, { SimpleGit } from 'simple-git';
 import chalk from 'chalk';
+import { execCommand } from './execCommand';
 
 interface GitChange {
   file: string;
@@ -15,7 +16,7 @@ export async function getGitChanges(): Promise<GitChange[]> {
     const diff = await git.diff([file]);
     changes.push({
       file,
-      content: diff
+      content: diff,
     });
   }
 
@@ -23,37 +24,46 @@ export async function getGitChanges(): Promise<GitChange[]> {
 }
 
 export async function getCurrentBranchName(): Promise<string> {
-  try {
-    const git: SimpleGit = simpleGit();
-    const branch = await git.branch();
-    
-    if (!branch.current) {
-      console.warn(chalk.yellow('Warning: Could not determine current branch name'));
-      return '';
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    // For GitHub Actions, get the actual PR branch name
+    const headRef = process.env.GITHUB_HEAD_REF;
+    if (headRef) {
+      return headRef;
     }
-
-    console.log(chalk.blue('Current branch:'), chalk.green(branch.current));
-    return branch.current;
-  } catch (error) {
-    console.error(chalk.red('Error getting branch name:'), error);
-    throw new Error(`Failed to get branch name: ${error}`);
   }
+
+  // Fallback to git command for local development
+  const result = await execCommand('git rev-parse --abbrev-ref HEAD');
+  return result.stdout.trim();
 }
 
 export async function getCurrentCommitMessage(): Promise<string> {
-  try {
-    const git: SimpleGit = simpleGit();
-    const log = await git.log({ maxCount: 1 });
-    
-    if (!log.latest?.message) {
-      console.warn(chalk.yellow('Warning: No commit message found'));
-      return '';
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    // For GitHub Actions
+    try {
+      if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
+        // For PR events
+        const eventPath = process.env.GITHUB_EVENT_PATH;
+        if (eventPath) {
+          const event = require(eventPath);
+          const prTitle = event.pull_request?.title;
+          const prBody = event.pull_request?.body;
+          return prTitle || prBody || '';
+        }
+      } else {
+        // For push events
+        const result = await execCommand('git log -1 --pretty=%B');
+        return result.stdout.trim();
+      }
+    } catch (error) {
+      console.warn(
+        chalk.yellow('Failed to get commit message from GitHub:'),
+        error,
+      );
     }
-
-    console.log(chalk.blue('Current commit message:'), chalk.green(log.latest.message));
-    return log.latest.message;
-  } catch (error) {
-    console.error(chalk.red('Error getting commit message:'), error);
-    throw new Error(`Failed to get commit message: ${error}`);
   }
-} 
+
+  // Fallback to git log for local development
+  const result = await execCommand('git log -1 --pretty=%B');
+  return result.stdout.trim();
+}

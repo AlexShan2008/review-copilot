@@ -96,7 +96,6 @@ export class OpenAIProvider extends BaseProvider {
           );
           console.error(chalk.gray('Response Body:'), apiError.response.data);
 
-          // 如果返回的是 HTML，很可能是代理或认证问题
           if (
             typeof apiError.response.data === 'string' &&
             apiError.response.data.includes('<!DOCTYPE html>')
@@ -152,7 +151,6 @@ export class OpenAIProvider extends BaseProvider {
         }),
       );
 
-      // 如果响应是字符串，尝试解析它
       let parsedResponse;
       if (typeof response === 'string') {
         try {
