@@ -15,40 +15,6 @@ interface ReviewCommandOptions {
   config: string;
 }
 
-function hasReviewSuggestions(result: string): boolean {
-  const suggestionPatterns = [
-    /suggested/i,
-    /should/i,
-    /incorrect/i,
-    /does not follow/i,
-    /missing/i,
-    /recommend/i,
-    /consider/i,
-    /could be/i,
-    /improve/i,
-    /need to/i,
-    /must be/i,
-    /expected/i,
-    /invalid/i,
-    /不符合/i,
-    /问题/i,
-    /警告/i,
-    /错误/i,
-    /建议/i,
-    /推荐/i,
-    /考虑/i,
-    /应该/i,
-    /必须/i,
-    /需要/i,
-    /可以/i,
-    /最好/i,
-  ];
-
-  return suggestionPatterns.some((pattern) =>
-    JSON.stringify(result).toLowerCase().match(pattern),
-  );
-}
-
 async function processReview(
   aiProvider: any,
   prompt: string,
@@ -57,14 +23,12 @@ async function processReview(
   results: ReviewResult[],
 ): Promise<void> {
   const result = await aiProvider.review(prompt, content);
-  if (hasReviewSuggestions(result)) {
-    results.push({
-      success: false,
-      message: `${reviewType} Review`,
-      suggestions: [result],
-      errors: [],
-    });
-  }
+  results.push({
+    success: false,
+    message: `${reviewType} Review`,
+    suggestions: [result],
+    errors: [],
+  });
 }
 
 export async function reviewCommand(
