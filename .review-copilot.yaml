@@ -1,13 +1,14 @@
 # AI Provider Configuration
 providers:
   openai:
-    enabled: false
+    enabled: true
     apiKey: ${AI_API_KEY_OPENAI}
     model: gpt-4-turbo-preview
     baseURL: https://chat.rightcapital.ai/v1
+    reviewLanguage: 'zh'
 
   deepseek:
-    enabled: true
+    enabled: false
     apiKey: ${AI_API_KEY_DEEPSEEK}
     model: deepseek-chat
     baseURL: https://api.deepseek.com/v1
@@ -43,6 +44,9 @@ rules:
       # Include patterns
       - '**/*.{ts,tsx}'
       - '**/*.{js,jsx}'
+      - '**/*.{json}'
+      - '**/*.{yaml}'
+      - '**/*.{yml}'
       # Exclude patterns
       - '!package-lock.json'
       - '!**/package-lock.json'
