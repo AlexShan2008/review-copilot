@@ -34,9 +34,9 @@ async function processReview(
 export async function reviewCommand(
   options: ReviewCommandOptions,
 ): Promise<boolean> {
-  const spinner = ora('Starting code review...').start();
-
+  let spinner: ora.Ora | undefined;
   try {
+    spinner = ora('Starting code review...').start();
     const configManager = ConfigManager.getInstance();
     await configManager.loadConfig(options.config);
     const config = configManager.getConfig();
@@ -50,7 +50,7 @@ export async function reviewCommand(
     console.log(chalk.gray('Changes:'), changes);
 
     if (!changes.length) {
-      spinner.info(chalk.yellow('No changes to review.'));
+      spinner.info('No changes to review.');
       spinner.succeed('Review completed');
       return true;
     }
@@ -188,7 +188,9 @@ export async function reviewCommand(
 
     return true;
   } catch (error) {
-    spinner.fail(chalk.red('Review failed'));
+    if (spinner) {
+      spinner.fail('Review failed');
+    }
 
     if (error instanceof Error) {
       console.error(chalk.red('\nError details:'));
@@ -218,6 +220,10 @@ export async function reviewCommand(
     }
 
     return false;
+  } finally {
+    if (spinner) {
+      spinner.stop();
+    }
   }
 }
 
