@@ -1,5 +1,13 @@
 # ReviewCopilot
 
+[![npm version](https://img.shields.io/npm/v/review-copilot.svg)](https://www.npmjs.com/package/review-copilot)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI Status](https://github.com/yourusername/review-copilot/workflows/CI/badge.svg)](https://github.com/yourusername/review-copilot/actions)
+[![Coverage Status](https://coveralls.io/repos/github/yourusername/review-copilot/badge.svg?branch=main)](https://coveralls.io/github/yourusername/review-copilot?branch=main)
+[![Dependencies Status](https://status.david-dm.org/gh/yourusername/review-copilot.svg)](https://david-dm.org/yourusername/review-copilot)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://makeapullrequest.com)
+[![Downloads](https://img.shields.io/npm/dm/review-copilot.svg)](https://www.npmjs.com/package/review-copilot)
+
 🤖 AI-powered code review assistant that helps you maintain code quality with customizable rules.
 
 ## Quick Start
