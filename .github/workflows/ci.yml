@@ -1,25 +1,16 @@
-name: Code Review
-
+name: CI
 on:
   pull_request:
     types: [opened, synchronize]
-  pull_request_review_comment:
-    types: [created]
-
+  push:
+    branches:
+      - main
+      - master
 jobs:
-  review:
+  build:
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      contents: read
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v3
-        with:
-          node-version: '18'
 
       - name: Install pnpm
         uses: pnpm/action-setup@v2
@@ -27,7 +18,13 @@ jobs:
           version: 8
           run_install: false
 
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
       - name: Get pnpm store directory
+        id: pnpm-cache
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
@@ -44,11 +41,12 @@ jobs:
         run: pnpm install
 
       - name: Build
-        run: pnpm run build
+        run: pnpm build
 
-      - name: Run ReviewCopilot
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AI_API_KEY_OPENAI: ${{ secrets.AI_API_KEY_OPENAI }}
-          GITHUB_EVENT_NUMBER: ${{ github.event.number }}
-        run: node -r dotenv/config dist/cli/index.js review
+      - name: Run tests with coverage
+        run: pnpm test:coverage --verbose
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
