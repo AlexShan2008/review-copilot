@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.2.6](https://github.com/AlexShan2008/review-copilot/compare/v0.2.5...v0.2.6) (2025-03-16)
+
+
+### Bug Fixes
+
+* upload coverage report to Codecov issue ([2bb84f8](https://github.com/AlexShan2008/review-copilot/commit/2bb84f8c3bfebd12e5311ca06be8fe4d30e58126))
+
+
+### CI
+
+* add GitHub Actions workflow and README badges ([f31437b](https://github.com/AlexShan2008/review-copilot/commit/f31437b1152f1eca9f7cf97b8f2b0f61adc99249))
+
 ### [0.2.5](https://github.com/AlexShan2008/review-copilot/compare/v0.2.4...v0.2.5) (2025-03-10)
 
 

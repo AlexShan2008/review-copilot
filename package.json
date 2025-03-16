@@ -1,6 +1,6 @@
 {
   "name": "review-copilot",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "ReviewCopilot - AI-powered code review assistant with customizable prompts",
   "main": "dist/index.js",
   "bin": {
