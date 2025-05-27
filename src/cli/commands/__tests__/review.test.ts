@@ -1,9 +1,9 @@
 import { ConfigManager } from '../../../config/config-manager';
 import { reviewCommand } from '../review';
 import {
-  getGitChanges,
   getCurrentBranchName,
   getCurrentCommitMessage,
+  getCommitsForReview,
 } from '../../../utils/git';
 import { ProviderFactory } from '../../../providers/provider-factory';
 import { OpenAIProvider } from '../../../providers/openai-provider';
@@ -35,7 +35,6 @@ jest.mock('ora', () => {
     spinner: { interval: 100, frames: ['|'] },
     indent: 0,
   };
-
   return jest.fn(() => mockSpinner);
 });
 
@@ -107,10 +106,18 @@ describe('review-copilot CLI', () => {
     (ProviderFactory.createProvider as jest.Mock).mockReturnValue(mockProvider);
 
     // Mock Git Utils with realistic values
-    (getGitChanges as jest.Mock).mockResolvedValue([
+    (getCommitsForReview as jest.Mock).mockResolvedValue([
       {
-        file: 'src/test.ts',
-        content: 'export function test() { return true; }',
+        hash: 'abc123',
+        date: '2023-05-01T00:00:00Z',
+        message: 'feat: add new feature',
+        author: 'John Doe',
+        files: [
+          {
+            file: 'src/test.ts',
+            changes: 'export function test() { return true; }',
+          },
+        ],
       },
     ]);
     (getCurrentBranchName as jest.Mock).mockResolvedValue('feature/test-123');
@@ -120,7 +127,7 @@ describe('review-copilot CLI', () => {
   });
 
   it('should handle no changes scenario', async () => {
-    (getGitChanges as jest.Mock).mockResolvedValueOnce([]);
+    (getCommitsForReview as jest.Mock).mockResolvedValueOnce([]);
     const options = { config: '.review-copilot.yaml' };
     const result = await reviewCommand(options);
     expect(result).toBe(true);
@@ -131,8 +138,14 @@ describe('review-copilot CLI', () => {
     mockProvider.review.mockRejectedValueOnce(testError);
     const options = { config: '.review-copilot.yaml' };
     const result = await reviewCommand(options);
-
     expect(result).toBe(false);
+  });
+
+  it('should review commits successfully', async () => {
+    const options = { config: '.review-copilot.yaml' };
+    const result = await reviewCommand(options);
+    expect(result).toBe(true);
+    expect(mockProvider.review).toHaveBeenCalled();
   });
 });
 
@@ -171,15 +184,32 @@ describe('Review Command File Patterns', () => {
 
     // Mock Provider
     mockProvider = {
-      review: jest.fn().mockResolvedValue('No issues found'),
+      review: jest.fn().mockResolvedValue({
+        success: true,
+        message: 'No issues found',
+      }),
     } as unknown as jest.Mocked<OpenAIProvider>;
 
     (ProviderFactory.createProvider as jest.Mock).mockReturnValue(mockProvider);
 
     // Mock Git Utils
-    (getGitChanges as jest.Mock).mockResolvedValue([
-      { file: 'src/test.ts', content: 'test content' },
-      { file: 'src/index.js', content: 'js content' },
+    (getCommitsForReview as jest.Mock).mockResolvedValue([
+      {
+        hash: 'abc123',
+        date: '2023-05-01T00:00:00Z',
+        message: 'feat: add new feature',
+        author: 'John Doe',
+        files: [
+          {
+            file: 'src/test.ts',
+            changes: 'test content',
+          },
+          {
+            file: 'src/index.js',
+            changes: 'js content',
+          },
+        ],
+      },
     ]);
   });
 
