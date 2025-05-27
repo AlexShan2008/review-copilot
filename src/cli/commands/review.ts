@@ -3,9 +3,9 @@ import ora from 'ora';
 import { ConfigManager } from '../../config/config-manager';
 import { ProviderFactory } from '../../providers/provider-factory';
 import { ReviewResult } from '../../types';
-import { getCurrentBranchName, getCommitsForReview } from '../../utils/git';
 import micromatch from 'micromatch';
 import { GitPlatformFactory } from '../../services/git-platform-factory';
+import { getVcsProvider } from '../../utils/vcs-factory';
 
 interface ReviewCommandOptions {
   config: string;
@@ -42,9 +42,10 @@ export async function reviewCommand(
     const aiProvider = ProviderFactory.createProvider(config);
 
     spinner.text = 'Getting all commits in MR...';
-    const commits = await getCommitsForReview(options.baseBranch || 'main');
+    const vcs = getVcsProvider();
+    const commits = await vcs.getCommitsForReview(options.baseBranch || 'main');
 
-    if (!commits.length) {
+    if (!Array.isArray(commits) || commits.length === 0) {
       spinner.info('No commits to review.');
       spinner.succeed('Review completed');
       return true;
@@ -68,7 +69,13 @@ export async function reviewCommand(
           '**/*.{ts,tsx,js,jsx}',
         ];
 
-        const filteredFiles = commit.files.filter((change) => {
+        const files = Array.isArray(commit.files) ? commit.files : [];
+        // Normalize files to always have a string 'changes' property
+        const normalizedFiles = files.map((f) => ({
+          ...f,
+          changes: typeof f.changes === 'string' ? f.changes : '',
+        }));
+        const filteredFiles = normalizedFiles.filter((change) => {
           const isIgnored = patterns
             .filter((pattern) => pattern.startsWith('!'))
             .some((pattern) => {
@@ -102,9 +109,12 @@ export async function reviewCommand(
 
         console.log(chalk.blue('\nFiles to review in this commit:'));
         filteredFiles.forEach((change) => {
-          console.log(
-            chalk.gray(`- ${change.file} (${change.changes.length} bytes)`),
-          );
+          if (typeof change.changes !== 'string') {
+            console.error('DEBUG: change.changes is not a string', change);
+          }
+          const changeLength =
+            typeof change.changes === 'string' ? change.changes.length : 0;
+          console.log(chalk.gray(`- ${change.file} (${changeLength} bytes)`));
         });
 
         if (filteredFiles.length > 0) {
@@ -112,10 +122,13 @@ export async function reviewCommand(
           const truncatedFiles = filteredFiles.map((change) => ({
             ...change,
             changes:
+              typeof change.changes === 'string' &&
               change.changes.length > MAX_FILE_SIZE
                 ? change.changes.slice(0, MAX_FILE_SIZE) +
                   '\n... (content truncated for size limit)'
-                : change.changes,
+                : typeof change.changes === 'string'
+                  ? change.changes
+                  : '',
           }));
 
           const combinedContent = truncatedFiles
@@ -153,7 +166,7 @@ export async function reviewCommand(
 
     // Review branch name if enabled (only once for the whole MR)
     if (config.rules.branchName.enabled) {
-      const branchName = await getCurrentBranchName();
+      const branchName = await vcs.getCurrentBranchName();
       if (branchName) {
         await processReview(
           aiProvider,
@@ -202,19 +215,16 @@ export async function reviewCommand(
       console.error(chalk.red('\nError details:'));
       console.error(chalk.yellow('Message:'), error.message);
 
-      try {
-        const errorDetails = error.message.split('Details: ')[1];
-        if (errorDetails) {
-          const errorObj = JSON.parse(errorDetails);
-          if (errorObj.error) {
-            console.error(chalk.yellow('\nOpenAI Error:'));
-            console.error(chalk.gray('Type:'), errorObj.error.type);
-            console.error(chalk.gray('Code:'), errorObj.error.code);
-            console.error(chalk.gray('Message:'), errorObj.error.message);
-          }
+      const message = typeof error.message === 'string' ? error.message : '';
+      const errorDetails = message.split('Details: ')[1];
+      if (typeof errorDetails === 'string' && errorDetails.length > 0) {
+        const errorObj = JSON.parse(errorDetails);
+        if (errorObj.error) {
+          console.error(chalk.yellow('\nOpenAI Error:'));
+          console.error(chalk.gray('Type:'), errorObj.error.type);
+          console.error(chalk.gray('Code:'), errorObj.error.code);
+          console.error(chalk.gray('Message:'), errorObj.error.message);
         }
-      } catch (parseError) {
-        // Ignore JSON parse errors for non-OpenAI errors
       }
 
       if (error.stack) {
