@@ -3,16 +3,13 @@ import ora from 'ora';
 import { ConfigManager } from '../../config/config-manager';
 import { ProviderFactory } from '../../providers/provider-factory';
 import { ReviewResult } from '../../types';
-import {
-  getGitChanges,
-  getCurrentBranchName,
-  getCurrentCommitMessage,
-} from '../../utils/git';
+import { getCurrentBranchName, getCommitsForReview } from '../../utils/git';
 import micromatch from 'micromatch';
 import { GitPlatformFactory } from '../../services/git-platform-factory';
 
 interface ReviewCommandOptions {
   config: string;
+  baseBranch?: string;
 }
 
 async function processReview(
@@ -44,108 +41,117 @@ export async function reviewCommand(
     spinner.text = 'Initializing AI provider...';
     const aiProvider = ProviderFactory.createProvider(config);
 
-    spinner.text = 'Getting git changes...';
-    const changes = await getGitChanges();
+    spinner.text = 'Getting all commits in MR...';
+    const commits = await getCommitsForReview(options.baseBranch || 'main');
 
-    console.log(chalk.gray('Changes:'), changes);
-
-    if (!changes.length) {
-      spinner.info('No changes to review.');
+    if (!commits.length) {
+      spinner.info('No commits to review.');
       spinner.succeed('Review completed');
       return true;
     }
 
-    spinner.text = 'Analyzing changes...';
+    console.log(chalk.blue(`\nFound ${commits.length} commits to review`));
+
+    spinner.text = 'Analyzing commits...';
     const results: ReviewResult[] = [];
 
-    // Review code changes if enabled
-    if (config.rules.codeChanges.enabled) {
-      const patterns = config.rules.codeChanges.filePatterns ?? [
-        '**/*.{ts,tsx,js,jsx}',
-      ];
+    for (const commit of commits) {
+      console.log(chalk.green('\n----------------------------------------'));
+      console.log(chalk.yellow('Reviewing commit:', commit.hash));
+      console.log(chalk.cyan('Author:', commit.author));
+      console.log(chalk.cyan('Date:', commit.date));
+      console.log(chalk.white('\nMessage:'), commit.message);
 
-      const filteredChanges = changes.filter((change) => {
-        const isIgnored = patterns
-          .filter((pattern) => pattern.startsWith('!'))
-          .some((pattern) => {
-            const cleanPattern = pattern.slice(1);
-            return micromatch.isMatch(change.file, cleanPattern, { dot: true });
-          });
+      // Review code changes if enabled
+      if (config.rules.codeChanges.enabled) {
+        const patterns = config.rules.codeChanges.filePatterns ?? [
+          '**/*.{ts,tsx,js,jsx}',
+        ];
 
-        if (isIgnored) {
-          console.log(chalk.yellow(`Ignoring file: ${change.file}`));
-          return false;
-        }
+        const filteredFiles = commit.files.filter((change) => {
+          const isIgnored = patterns
+            .filter((pattern) => pattern.startsWith('!'))
+            .some((pattern) => {
+              const cleanPattern = pattern.slice(1);
+              return micromatch.isMatch(change.file, cleanPattern, {
+                dot: true,
+              });
+            });
 
-        const isIncluded = patterns
-          .filter((pattern) => !pattern.startsWith('!'))
-          .some((pattern) =>
-            micromatch.isMatch(change.file, pattern, { dot: true }),
-          );
+          if (isIgnored) {
+            console.log(chalk.yellow(`Ignoring file: ${change.file}`));
+            return false;
+          }
 
-        if (!isIncluded) {
+          const isIncluded = patterns
+            .filter((pattern) => !pattern.startsWith('!'))
+            .some((pattern) =>
+              micromatch.isMatch(change.file, pattern, { dot: true }),
+            );
+
+          if (!isIncluded) {
+            console.log(
+              chalk.yellow(
+                `File not matching include patterns: ${change.file}`,
+              ),
+            );
+          }
+
+          return isIncluded;
+        });
+
+        console.log(chalk.blue('\nFiles to review in this commit:'));
+        filteredFiles.forEach((change) => {
           console.log(
-            chalk.yellow(`File not matching include patterns: ${change.file}`),
+            chalk.gray(`- ${change.file} (${change.changes.length} bytes)`),
+          );
+        });
+
+        if (filteredFiles.length > 0) {
+          const MAX_FILE_SIZE = 50000;
+          const truncatedFiles = filteredFiles.map((change) => ({
+            ...change,
+            changes:
+              change.changes.length > MAX_FILE_SIZE
+                ? change.changes.slice(0, MAX_FILE_SIZE) +
+                  '\n... (content truncated for size limit)'
+                : change.changes,
+          }));
+
+          const combinedContent = truncatedFiles
+            .map((change) => `File: ${change.file}\n${change.changes}\n`)
+            .join('\n---\n\n');
+
+          const MAX_TOTAL_SIZE = 100000;
+          const finalContent =
+            combinedContent.length > MAX_TOTAL_SIZE
+              ? combinedContent.slice(0, MAX_TOTAL_SIZE) +
+                '\n... (content truncated for total size limit)'
+              : combinedContent;
+
+          await processReview(
+            aiProvider,
+            config.rules.codeChanges.prompt,
+            finalContent,
+            `Code Review (Commit: ${commit.hash.slice(0, 7)})`,
+            results,
           );
         }
-
-        return isIncluded;
-      });
-
-      console.log(chalk.blue('\nFiles to review:'));
-      filteredChanges.forEach((change) => {
-        console.log(
-          chalk.gray(`- ${change.file} (${change.content.length} bytes)`),
-        );
-      });
-
-      if (filteredChanges.length > 0) {
-        const MAX_FILE_SIZE = 50000;
-        const truncatedChanges = filteredChanges.map((change) => ({
-          ...change,
-          content:
-            change.content.length > MAX_FILE_SIZE
-              ? change.content.slice(0, MAX_FILE_SIZE) +
-                '\n... (content truncated for size limit)'
-              : change.content,
-        }));
-
-        const combinedContent = truncatedChanges
-          .map((change) => `File: ${change.file}\n${change.content}\n`)
-          .join('\n---\n\n');
-
-        const MAX_TOTAL_SIZE = 100000;
-        const finalContent =
-          combinedContent.length > MAX_TOTAL_SIZE
-            ? combinedContent.slice(0, MAX_TOTAL_SIZE) +
-              '\n... (content truncated for total size limit)'
-            : combinedContent;
-
-        await processReview(
-          aiProvider,
-          config.rules.codeChanges.prompt,
-          finalContent,
-          'Code',
-          results,
-        );
       }
-    }
 
-    // Review commit message if enabled
-    if (config.rules.commitMessage.enabled) {
-      const commitMessage = await getCurrentCommitMessage();
-      if (commitMessage) {
+      // Review commit message if enabled
+      if (config.rules.commitMessage.enabled) {
         await processReview(
           aiProvider,
           config.rules.commitMessage.prompt,
-          commitMessage,
-          'Commit Message',
+          commit.message,
+          `Commit Message Review (${commit.hash.slice(0, 7)})`,
           results,
         );
       }
     }
 
-    // Review branch name if enabled
+    // Review branch name if enabled (only once for the whole MR)
     if (config.rules.branchName.enabled) {
       const branchName = await getCurrentBranchName();
       if (branchName) {
