@@ -1,42 +1,8 @@
 import { Octokit } from '@octokit/rest';
 import chalk from 'chalk';
-import {
-  VcsProvider,
-  GitChange,
-  CommitReviewInfo,
-} from './git-service.interface';
+import { VcsProvider, CommitReviewInfo } from './git-service.interface';
 
 export class GithubProvider implements VcsProvider {
-  async getChanges(): Promise<GitChange[]> {
-    const changes: GitChange[] = [];
-    try {
-      const eventPath = process.env.GITHUB_EVENT_PATH;
-      if (eventPath) {
-        const event = require(eventPath);
-        const prNumber = event.pull_request?.number;
-        if (prNumber) {
-          console.log(chalk.blue('\nFetching PR files from GitHub API...'));
-          const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-          const [owner, repo] = (process.env.GITHUB_REPOSITORY || '').split(
-            '/',
-          );
-          const { data: files } = await octokit.pulls.listFiles({
-            owner,
-            repo,
-            pull_number: prNumber,
-          });
-          console.log(chalk.gray('Files changed in PR:'), files.length);
-          for (const file of files) {
-            changes.push({ file: file.filename, content: file.patch || '' });
-          }
-        }
-      }
-    } catch (error) {
-      console.error(chalk.red('Error fetching PR files:'), error);
-    }
-    return changes;
-  }
-
   async getCurrentBranchName(): Promise<string> {
     const headRef = process.env.GITHUB_HEAD_REF;
     if (headRef) {

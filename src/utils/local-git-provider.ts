@@ -1,23 +1,8 @@
 import simpleGit, { SimpleGit } from 'simple-git';
 import { execCommand } from './exec-command';
-import {
-  VcsProvider,
-  GitChange,
-  CommitReviewInfo,
-} from './git-service.interface';
+import { VcsProvider, CommitReviewInfo } from './git-service.interface';
 
 export class LocalGitProvider implements VcsProvider {
-  async getChanges(): Promise<GitChange[]> {
-    const changes: GitChange[] = [];
-    const git: SimpleGit = simpleGit();
-    const status = await git.status();
-    for (const file of [...status.modified, ...status.not_added]) {
-      const diff = await git.diff([file]);
-      changes.push({ file, content: diff });
-    }
-    return changes;
-  }
-
   async getCurrentBranchName(): Promise<string> {
     const result = await execCommand('git rev-parse --abbrev-ref HEAD');
     return result.stdout.trim();
