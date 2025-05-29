@@ -51,7 +51,6 @@ jobs:
           CI: true
           NODE_ENV: test
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          AI_API_KEY_OPENAI: ${{ secrets.AI_API_KEY_OPENAI }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
