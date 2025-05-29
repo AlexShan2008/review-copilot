@@ -63,6 +63,10 @@ export class GithubProvider implements VcsProvider {
 
   async getCommitsForReview(baseBranch = 'main'): Promise<CommitReviewInfo[]> {
     try {
+      if (!process.env.GITHUB_TOKEN) {
+        throw new Error('Missing GITHUB_TOKEN');
+      }
+
       const commits: CommitReviewInfo[] = [];
       const eventPath = process.env.GITHUB_EVENT_PATH;
       if (eventPath) {
