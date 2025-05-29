@@ -61,48 +61,52 @@ export class GithubProvider implements VcsProvider {
     return [];
   }
 
-  async getCommitsForReview(baseBranch = 'main'): Promise<CommitReviewInfo[]> {
+  async getPullRequestChanges(
+    baseBranch = 'main',
+  ): Promise<CommitReviewInfo[]> {
     try {
       if (!process.env.GITHUB_TOKEN) {
         throw new Error('Missing GITHUB_TOKEN');
       }
 
-      const commits: CommitReviewInfo[] = [];
       const eventPath = process.env.GITHUB_EVENT_PATH;
-      if (eventPath) {
-        const event = require(eventPath);
-        const prNumber = event.pull_request?.number;
-        if (prNumber) {
-          const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-          const [owner, repo] = (process.env.GITHUB_REPOSITORY || '').split(
-            '/',
-          );
-          const { data: prCommits } = await octokit.pulls.listCommits({
-            owner,
-            repo,
-            pull_number: prNumber,
-          });
-          for (const prCommit of prCommits) {
-            const { data: commit } = await octokit.repos.getCommit({
-              owner,
-              repo,
-              ref: prCommit.sha,
-            });
-            commits.push({
-              hash: commit.sha,
-              date: commit.commit.author?.date || '',
-              message: commit.commit.message,
-              author: commit.commit.author?.name || '',
-              files:
-                commit.files?.map((file) => ({
-                  file: file.filename,
-                  changes: file.patch || '',
-                })) || [],
-            });
-          }
-        }
+      if (!eventPath) {
+        return [];
       }
-      return commits;
+
+      const event = require(eventPath);
+      const prNumber = event.pull_request?.number;
+      if (!prNumber) {
+        return [];
+      }
+
+      const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
+      const [owner, repo] = (process.env.GITHUB_REPOSITORY || '').split('/');
+
+      const { data: pullRequest } = await octokit.pulls.get({
+        owner,
+        repo,
+        pull_number: prNumber,
+      });
+
+      const { data: files } = await octokit.pulls.listFiles({
+        owner,
+        repo,
+        pull_number: prNumber,
+      });
+
+      const commitInfo: CommitReviewInfo = {
+        hash: pullRequest.head.sha,
+        date: pullRequest.updated_at,
+        message: pullRequest.title,
+        author: pullRequest.user?.login || '',
+        files: files.map((file) => ({
+          file: file.filename,
+          changes: file.patch || '',
+        })),
+      };
+
+      return [commitInfo];
     } catch (error) {
       console.error(chalk.red('Error getting commits for review:'), error);
       return [];

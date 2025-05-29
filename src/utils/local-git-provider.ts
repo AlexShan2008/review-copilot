@@ -30,7 +30,9 @@ export class LocalGitProvider implements VcsProvider {
     }
   }
 
-  async getCommitsForReview(baseBranch = 'main'): Promise<CommitReviewInfo[]> {
+  async getPullRequestChanges(
+    baseBranch = 'main',
+  ): Promise<CommitReviewInfo[]> {
     try {
       const git: SimpleGit = simpleGit();
       const commits: CommitReviewInfo[] = [];

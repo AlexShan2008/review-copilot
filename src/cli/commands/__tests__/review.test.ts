@@ -121,7 +121,7 @@ describe('reviewCommand', () => {
 
     // Setup VCS provider mock
     mockVcsProvider = {
-      getCommitsForReview: jest.fn().mockResolvedValue([mockCommit]),
+      getPullRequestChanges: jest.fn().mockResolvedValue([mockCommit]),
       getCurrentBranchName: jest.fn().mockResolvedValue('feature/test'),
     };
     (getVcsProvider as jest.Mock).mockReturnValue(mockVcsProvider);
@@ -156,7 +156,7 @@ describe('reviewCommand', () => {
     });
 
     it('should handle no commits scenario', async () => {
-      mockVcsProvider.getCommitsForReview.mockResolvedValue([]);
+      mockVcsProvider.getPullRequestChanges.mockResolvedValue([]);
 
       const result = await reviewCommand({ config: 'test-config.yaml' });
 
@@ -167,7 +167,7 @@ describe('reviewCommand', () => {
     });
 
     it('should handle null/undefined commits', async () => {
-      mockVcsProvider.getCommitsForReview.mockResolvedValue(null);
+      mockVcsProvider.getPullRequestChanges.mockResolvedValue(null);
 
       const result = await reviewCommand({ config: 'test-config.yaml' });
 
@@ -212,7 +212,7 @@ describe('reviewCommand', () => {
         ],
       };
 
-      mockVcsProvider.getCommitsForReview.mockResolvedValue([
+      mockVcsProvider.getPullRequestChanges.mockResolvedValue([
         mockCommitWithMultipleFiles,
       ]);
 
@@ -240,7 +240,7 @@ describe('reviewCommand', () => {
         ],
       };
 
-      mockVcsProvider.getCommitsForReview.mockResolvedValue([
+      mockVcsProvider.getPullRequestChanges.mockResolvedValue([
         mockCommitWithInvalidChanges,
       ]);
 
@@ -257,7 +257,7 @@ describe('reviewCommand', () => {
         files: [{ file: 'src/large.ts', changes: largeContent }],
       };
 
-      mockVcsProvider.getCommitsForReview.mockResolvedValue([
+      mockVcsProvider.getPullRequestChanges.mockResolvedValue([
         mockCommitWithLargeFile,
       ]);
 
@@ -355,7 +355,7 @@ describe('reviewCommand', () => {
     });
 
     it('should handle VCS provider errors', async () => {
-      mockVcsProvider.getCommitsForReview.mockRejectedValue(
+      mockVcsProvider.getPullRequestChanges.mockRejectedValue(
         new Error('Git error'),
       );
 
@@ -407,7 +407,7 @@ describe('reviewCommand', () => {
         files: [],
       };
 
-      mockVcsProvider.getCommitsForReview.mockResolvedValue([
+      mockVcsProvider.getPullRequestChanges.mockResolvedValue([
         commitWithNoFiles,
       ]);
 
@@ -425,7 +425,7 @@ describe('reviewCommand', () => {
       });
 
       expect(result).toBe(true);
-      expect(mockVcsProvider.getCommitsForReview).toHaveBeenCalledWith(
+      expect(mockVcsProvider.getPullRequestChanges).toHaveBeenCalledWith(
         'develop',
       );
     });

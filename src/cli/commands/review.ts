@@ -43,7 +43,9 @@ export async function reviewCommand(
 
     spinner.text = 'Getting all commits in MR...';
     const vcs = getVcsProvider();
-    const commits = await vcs.getCommitsForReview(options.baseBranch || 'main');
+    const commits = await vcs.getPullRequestChanges(
+      options.baseBranch || 'main',
+    );
 
     if (!Array.isArray(commits) || commits.length === 0) {
       spinner.info('No commits to review.');
