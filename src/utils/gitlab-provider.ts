@@ -21,7 +21,9 @@ export class GitlabProvider implements VcsProvider {
     // TODO: Implement GitLab-specific logic
     return [];
   }
-  async getCommitsForReview(baseBranch = 'main'): Promise<CommitReviewInfo[]> {
+  async getPullRequestChanges(
+    baseBranch = 'main',
+  ): Promise<CommitReviewInfo[]> {
     // TODO: Implement GitLab-specific logic
     return [];
   }
