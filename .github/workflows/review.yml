@@ -50,5 +50,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AI_API_KEY_OPENAI: ${{ secrets.AI_API_KEY_OPENAI }}
+          AI_API_KEY_DEEPSEEK: ${{ secrets.AI_API_KEY_DEEPSEEK }}
           GITHUB_EVENT_NUMBER: ${{ github.event.number }}
         run: node -r dotenv/config dist/cli/index.js review
