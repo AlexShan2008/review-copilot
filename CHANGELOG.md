@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [0.3.0](https://github.com/AlexShan2008/review-copilot/compare/v0.2.6...v0.3.0) (2025-05-29)
+
+
+### Features
+
+* enable deepseek AI review ([342f931](https://github.com/AlexShan2008/review-copilot/commit/342f931084c1dece78ea05171aafbaf1adc4a0fe))
+* enable OpenAI AI review ([9093d1d](https://github.com/AlexShan2008/review-copilot/commit/9093d1d25ec7d8555b2de374958fb8697a0482e5))
+* get PR file changes instead of individual commits for review ([1157fce](https://github.com/AlexShan2008/review-copilot/commit/1157fcee89ca89ca4f5994c58b96b6651b10ba29))
+* support for reviewing all commits in MR ([463bdf3](https://github.com/AlexShan2008/review-copilot/commit/463bdf323e3d54fdfc20a64b5fbffad4ecc8950b))
+
+
+### Bug Fixes
+
+* address missing AI_API_KEY_DEEPSEEK issue ([7257ac7](https://github.com/AlexShan2008/review-copilot/commit/7257ac799de702d55b36755c76b39a7b36b9eeb8))
+* resolve failing test cases ([8df114c](https://github.com/AlexShan2008/review-copilot/commit/8df114ce6443c08273221a08ecf45291de0ef5fd))
+
+
+### Refactors
+
+* extract getVcsProvider for easier maintenance and support for GitHub and GitLab ([367b86e](https://github.com/AlexShan2008/review-copilot/commit/367b86ef6a856ca33effde8b7353b32eedf54c4c))
+* remove unused code ([5b0ecb5](https://github.com/AlexShan2008/review-copilot/commit/5b0ecb537a6a8ace737881b45b74053d0127937e))
+* remove unused code `getChanges` function ([e25bab6](https://github.com/AlexShan2008/review-copilot/commit/e25bab6860d9b08ef4c8793735d7933b28a118aa))
+* throw error on GitHub when GITHUB_TOKEN is missing ([e7c267f](https://github.com/AlexShan2008/review-copilot/commit/e7c267faacaad353ec980a4f282ac212f76e81a3))
+
 ### [0.2.6](https://github.com/AlexShan2008/review-copilot/compare/v0.2.5...v0.2.6) (2025-03-16)
 
 
