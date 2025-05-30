@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.3](https://github.com/AlexShan2008/review-copilot/compare/v0.4.2...v0.4.3) (2025-05-30)
+
+
+### Features
+
+* OpenAI update ([0029833](https://github.com/AlexShan2008/review-copilot/commit/0029833c363f4e186b48d87dd315186061b8dd68))
+
 ### [0.4.2](https://github.com/AlexShan2008/review-copilot/compare/v0.4.1...v0.4.2) (2025-05-30)
 
 
