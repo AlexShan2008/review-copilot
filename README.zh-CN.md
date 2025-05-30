@@ -27,6 +27,7 @@ ReviewCopilot 是一款基于 AI 的代码审查助手，帮助你通过自定�
    ```bash
    review-copilot init
    ```
+   此命令会生成 `.review-copilot.yaml` 文件，用于配置 AI 代码审查。
 3. 在 `.env` 文件中设置你的 AI 提供商密钥：
    ```bash
    AI_API_KEY_OPENAI=你的密钥
@@ -48,7 +49,7 @@ providers:
     enabled: true
     apiKey: ${AI_API_KEY_OPENAI}
     model: gpt-4-turbo-preview
-    baseURL: https://api.openai.com/v1
+    baseURL: https://api.openai.com/v1/models
   deepseek:
     enabled: false
     apiKey: ${AI_API_KEY_DEEPSEEK}
@@ -119,7 +120,7 @@ providers:
     enabled: true
     apiKey: ${AI_API_KEY_OPENAI}
     model: gpt-4-turbo-preview
-    baseURL: https://api.openai.com/v1
+    baseURL: https://api.openai.com/v1/models
     defaultHeaders:
       'X-Custom-Header': 'value'
     timeout: 60000

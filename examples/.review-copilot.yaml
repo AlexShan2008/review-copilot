@@ -1,0 +1,74 @@
+# AI Provider Configuration
+providers:
+  openai:
+    enabled: false
+    apiKey: ${AI_API_KEY_OPENAI}
+    model: gpt-4-turbo-preview
+    baseURL: https://api.openai.com/v1/models
+    reviewLanguage: 'zh'
+
+  deepseek:
+    enabled: true
+    apiKey: ${AI_API_KEY_DEEPSEEK}
+    model: deepseek-chat
+    baseURL: https://api.deepseek.com/v1
+    reviewLanguage: 'zh'
+
+# Review Triggers
+triggers:
+  - on: pull_request
+  - on: merge_request
+  - on: push
+
+# Code Review Rules
+rules:
+  commitMessage:
+    enabled: true
+    pattern: '^(feat|fix|docs|style|refactor|test|chore|ci)(\\(.+\\))?: .{1,50}'
+    prompt: |
+      Review this commit message and ensure it follows conventional commits format.
+      Format: <type>(<scope>): <description>
+      Types: feat, fix, docs, style, refactor, test, chore, ci
+
+  branchName:
+    enabled: true
+    pattern: '^(feature|bugfix|hotfix|release)/[A-Z]+-[0-9]+-.+'
+    prompt: |
+      Verify branch name follows the pattern:
+      <type>/<ticket-id>-<description>
+      Types: feature, bugfix, hotfix, release
+
+  codeChanges:
+    enabled: true
+    filePatterns:
+      # Include patterns
+      - '**/*.{ts,tsx}'
+      - '**/*.{js,jsx}'
+      - '**/*.{json}'
+      - '**/*.{yaml}'
+      - '**/*.{yml}'
+      # Exclude patterns
+      - '!package-lock.json'
+      - '!**/package-lock.json'
+      - '!yarn.lock'
+      - '!**/yarn.lock'
+      - '!pnpm-lock.yaml'
+      - '!**/pnpm-lock.yaml'
+      - '!**/dist/**'
+      - '!**/node_modules/**'
+      - '!**/*.min.js'
+      - '!**/*.bundle.js'
+    prompt: |
+      Review the code changes for:
+      1. Code style and formatting
+      2. Potential bugs and issues
+      3. Performance considerations
+      4. Security vulnerabilities
+      5. Best practices compliance
+
+# Custom Review Points
+customReviewPoints:
+  - name: 'Security Check'
+    prompt: 'Review code for security vulnerabilities...'
+  - name: 'Performance Review'
+    prompt: 'Analyze code for performance bottlenecks...'
