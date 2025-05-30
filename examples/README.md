@@ -1,48 +1,48 @@
+English | [中文](README.zh-CN.md)
+
 # Examples
 
 ## GitHub
 
 ### GitHub Actions
 
-项目根目录下创建 `.github` 目录，并在目录下创建 `workflows` 目录，在 `workflows` 目录下创建 `review.yml` 文件，详见：[examples/github/.github/workflows/review.yml](.github/workflows/review.yml)
+Create a `.github` directory in your project root, then a `workflows` directory inside it. Add a `review.yml` file under `workflows`. See: [examples/github/.github/workflows/review.yml](.github/workflows/review.yml)
 
-### 配置 GitHub Actions secrets and variables
+### Configure GitHub Actions secrets and variables
 
-在 GitHub 需要进行 code review 的项目中，点击 `Settings` -> `Secrets and variables` -> `Actions`，点击 `New repository secret`，创建 `AI_API_KEY_OPENAI` 和 `AI_API_KEY_DEEPSEEK` 两个 secret。
+In your GitHub project, go to `Settings` -> `Secrets and variables` -> `Actions`, then click `New repository secret` to add `AI_API_KEY_OPENAI` and `AI_API_KEY_DEEPSEEK`.
 
 ![image](./images/github-actions-secrets.png)
 
-### 项目中安装 ReviewCopilot
+### Install ReviewCopilot in your project
 
 ```bash
 pnpm add -D review-copilot
 ```
 
-### 验证 ReviewCopilot 是否安装成功
+### Check ReviewCopilot installation
 
 ```bash
 npx review-copilot --version
 0.4.0
 ```
 
-### 初始化 ReviewCopilot
+### Initialize ReviewCopilot
 
 ```bash
 npx review-copilot init
 ```
 
-### 运行 ReviewCopilot
+### Run ReviewCopilot
 
 ```bash
 npx review-copilot review
 ```
 
-````
+### Configure review copilot workflow
 
-### 配置 review copilot
-
-项目根目录下创建 `.github/workflows/review.yml` 文件，内容如下：
+Create `.github/workflows/review.yml` in your project root. Example:
 
 ```yaml
-
-````
+# See the main documentation for workflow configuration details
+```

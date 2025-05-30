@@ -10,7 +10,7 @@ providers:
     enabled: false
     apiKey: \${AI_API_KEY_OPENAI}
     model: gpt-4-turbo-preview
-    baseURL: https://chat.rightcapital.ai/v1
+    baseURL: https://api.openai.com/v1/models
     reviewLanguage: 'zh'
 
   deepseek:
