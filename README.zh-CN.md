@@ -146,6 +146,38 @@ providers:
 
 ReviewCopilot 可自动检测 CI 环境（如 GitHub Actions、GitLab CI），并在 Pull/Merge Request 上自动评论审查结果。
 
+---
+
+## 📚 示例：GitHub 集成
+
+详见 [examples/README.zh-CN.md](examples/README.zh-CN.md)，该文档提供了 ReviewCopilot 与 GitHub Actions 集成的详细步骤，包括：
+
+- 工作流文件配置（[示例](examples/github/.github/workflows/review.yml)）
+- 仓库密钥设置方法
+- 在项目中安装和初始化 ReviewCopilot
+- 在 Pull Request 上自动运行代码审查
+
+文档还包含截图和实用提示，助你顺利完成集成。
+
+---
+
+## 预期效果
+
+- 每次 PR 时，GitHub Actions 自动运行 ReviewCopilot
+- 审查结果会以评论形式反馈在 PR 页面
+
+---
+
+## 🖼️ 实际审查效果
+
+以下为 ReviewCopilot 在 Pull Request 上自动生成的审查评论示例：
+
+![ReviewCopilot 审查示例](./examples/images/review-comments.png)
+
+查看真实 PR 评论：[ReviewCopilot PR 审查示例](https://github.com/AlexShan2008/review-copilot/pull/25#issuecomment-2922197158)
+
+---
+
 ## 许可证
 
 MIT
