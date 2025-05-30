@@ -8,8 +8,8 @@ interface ProviderDefaultConfig {
 export const PROVIDER_DEFAULTS: Record<AIProviderType, ProviderDefaultConfig> =
   {
     openai: {
-      defaultBaseURL: 'https://api.openai.com/v1/models',
-      defaultModel: 'gpt-3.5-turbo',
+      defaultBaseURL: 'https://api.openai.com/v1',
+      defaultModel: 'gpt-4o-mini',
     },
     deepseek: {
       defaultBaseURL: 'https://api.deepseek.com/v1',

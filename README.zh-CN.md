@@ -49,7 +49,7 @@ providers:
     enabled: true
     apiKey: ${AI_API_KEY_OPENAI}
     model: gpt-4-turbo-preview
-    baseURL: https://api.openai.com/v1/models
+    baseURL: https://api.openai.com/v1
   deepseek:
     enabled: false
     apiKey: ${AI_API_KEY_DEEPSEEK}
@@ -119,8 +119,8 @@ providers:
   openai:
     enabled: true
     apiKey: ${AI_API_KEY_OPENAI}
-    model: gpt-4-turbo-preview
-    baseURL: https://api.openai.com/v1/models
+    model: gpt-4o-mini
+    baseURL: https://api.openai.com/v1
     defaultHeaders:
       'X-Custom-Header': 'value'
     timeout: 60000
