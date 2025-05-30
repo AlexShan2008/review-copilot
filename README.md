@@ -9,140 +9,119 @@ English | [中文](README.zh-CN.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://makeapullrequest.com)
 
-> **Important Notice**
->
-> - Code review currently only supports the **GitHub** platform.
-> - Supported AI model: **DeepSeek**.
-> - **GitLab** support is planned for the future.
+> **AI-powered code review assistant for GitHub, with customizable rules and multi-provider support.**
 
-🤖 AI-powered code review assistant that helps you maintain code quality with customizable rules.
+---
 
-## Quick Start
+## 🚀 Features
 
-1. Install:
+- **AI-Powered Reviews**: Automated code review using OpenAI or DeepSeek models.
+- **Customizable Rules**: Enforce commit message and branch name conventions, and define your own review points.
+- **Flexible File Filtering**: Use glob patterns to include/exclude files for review.
+- **CI/CD Integration**: Seamlessly integrates with GitHub Actions and GitLab CI (coming soon).
+- **Secure & Configurable**: API keys via environment variables, YAML-based config.
+- **Beautiful CLI**: User-friendly interface with progress indicators.
 
-```bash
-npm install -g review-copilot
-```
+---
 
-2. Initialize config:
+## ⚡ Quick Start
 
-```bash
-review-copilot init
-```
+1. **Install ReviewCopilot:**
 
-This command will generate a `.review-copilot.yaml` file, which is used to configure AI review rules and settings.
+   ```bash
+   npm install -g review-copilot
+   ```
 
-3. Set your AI provider key in `.env`:
+2. **Initialize Configuration:**
 
-```bash
-AI_API_KEY_OPENAI=your-key
-# or
-AI_API_KEY_DEEPSEEK=your-key
-```
+   ```bash
+   review-copilot init
+   ```
 
-4. Run review:
+   This creates a `.review-copilot.yaml` file in your project.
 
-```bash
-review-copilot review
-```
+3. **Set Your AI Provider Key:**
+   Add your API key to a `.env` file:
 
-## Configuration
+   ```env
+   AI_API_KEY_OPENAI=your-key
+   # or
+   AI_API_KEY_DEEPSEEK=your-key
+   ```
 
-`.review-copilot.yaml` example:
+4. **Run a Review:**
+   ```bash
+   review-copilot review
+   ```
+
+---
+
+## 🛠️ Configuration
+
+The main configuration file is `.review-copilot.yaml`. Here's a minimal example:
 
 ```yaml
-# AI Provider Configuration
 providers:
   openai:
     enabled: true
     apiKey: ${AI_API_KEY_OPENAI}
     model: gpt-4o-mini
-    baseURL: https://api.openai.com/v1
 
-  deepseek:
-    enabled: false
-    apiKey: ${AI_API_KEY_DEEPSEEK}
-    model: deepseek-chat
-    baseURL: https://api.deepseek.com/v1
-
-# Review Triggers
-triggers:
-  - on: pull_request
-  - on: merge_request
-  - on: push
-
-# Code Review Rules
 rules:
-  # Review commit messages
   commitMessage:
     enabled: true
     pattern: '^(feat|fix|docs|style|refactor|test|chore|ci)(\\(.+\\))?: .{1,50}'
-    prompt: |
-      Review this commit message and ensure it follows conventional commits format.
-      Format: <type>(<scope>): <description>
-      Types: feat, fix, docs, style, refactor, test, chore, ci
-
-  # Review branch names
   branchName:
     enabled: true
     pattern: '^(feature|bugfix|hotfix|release)/[A-Z]+-[0-9]+-.+'
-    prompt: |
-      Verify branch name follows the pattern:
-      <type>/<ticket-id>-<description>
-      Types: feature, bugfix, hotfix, release
-
-  # Review code changes
   codeChanges:
     enabled: true
     filePatterns:
-      - '**/*.{ts,tsx}'
-      - '**/*.{js,jsx}'
+      - '**/*.{ts,tsx,js,jsx}'
       - '!**/dist/**'
       - '!**/node_modules/**'
-    prompt: |
-      Review the code changes for:
-      1. Code style and formatting
-      2. Potential bugs and issues
-      3. Performance considerations
-      4. Security vulnerabilities
-      5. Best practices compliance
-
-# Custom Review Points
-customReviewPoints:
-  - name: 'Security Check'
-    prompt: 'Review code for security vulnerabilities...'
-  - name: 'Performance Review'
-    prompt: 'Analyze code for performance bottlenecks...'
 ```
 
-## Features
+- **Environment Variables**: Use `${VAR_NAME}` in your config to reference values from `.env`.
 
-- 🔍 AI-powered code review with multiple provider support
-- 🔄 Environment variable substitution in configuration
-- ✅ Conventional commit message validation
-- 🌿 Branch name pattern checking
-- 📝 Customizable review prompts
-- 🎯 Flexible file pattern filtering
-- 🤖 Multiple AI providers (OpenAI, DeepSeek)
-- 🔒 Secure API key handling
-- 🎨 Beautiful CLI interface with progress indicators
+For advanced configuration and custom review points, see the [Configuration Example](#configuration).
 
-## File Filtering
+---
 
-Control which files to review using glob patterns:
+## 📦 Usage
 
-```yaml
-filePatterns:
-  - '**/*.ts' # Review all TypeScript files
-  - '!**/test/**' # Ignore test files
-  - '!**/dist/**' # Ignore build output
-  - '!**/node_modules/**' # Ignore dependencies
-```
+- **Review a Pull Request or Branch:**
 
-## AI Provider Configuration
+  ```bash
+  review-copilot review
+  ```
 
-You can configure multiple AI providers and enable the one you want to use:
+- **Custom Review Points:**
+  Define your own prompts for security, performance, or other checks in `.review-copilot.yaml`:
+
+  ```yaml
+  customReviewPoints:
+    - name: 'Security Check'
+      prompt: 'Review code for security vulnerabilities...'
+    - name: 'Performance Review'
+      prompt: 'Analyze code for performance bottlenecks...'
+  ```
+
+- **File Filtering:**
+  Control which files are reviewed:
+  ```yaml
+  filePatterns:
+    - '**/*.ts'
+    - '!**/test/**'
+    - '!**/dist/**'
+    - '!**/node_modules/**'
+  ```
+
+---
+
+## 🤖 AI Provider Setup
+
+You can enable and configure multiple AI providers:
 
 ```yaml
 providers:
@@ -151,7 +130,7 @@ providers:
     apiKey: ${AI_API_KEY_OPENAI}
     model: gpt-4o-mini
     baseURL: https://api.openai.com/v1
-    # Optional settings
+    # Optional:
     defaultHeaders:
       'X-Custom-Header': 'value'
     timeout: 60000
@@ -163,21 +142,57 @@ providers:
     baseURL: https://api.deepseek.com/v1
 ```
 
-## Environment Variables
+---
 
-The configuration supports environment variable substitution using `${VAR_NAME}` syntax:
+## 🏗️ CI/CD Integration
 
-```yaml
-providers:
-  openai:
-    apiKey: ${AI_API_KEY_OPENAI}
-    baseURL: ${OPENAI_API_BASE_URL}
-```
+ReviewCopilot detects CI environments and can post review comments directly on pull/merge requests.
 
-## CI/CD Integration
+- **GitHub Actions**: Supported out of the box.
+- **GitLab CI**: Planned for future releases.
 
-ReviewCopilot automatically detects CI environments (GitHub Actions, GitLab CI) and can post review comments directly on pull/merge requests.
+---
 
-## License
+## 📚 Examples: GitHub Integration
+
+See the [examples/README.md](examples/README.md) for a step-by-step guide to integrating ReviewCopilot with GitHub Actions, including:
+
+- Setting up a workflow file ([example](examples/github/.github/workflows/review.yml))
+- Configuring repository secrets for your AI API keys
+- Installing and initializing ReviewCopilot in your project
+- Running code review automatically on pull requests
+
+The example also includes screenshots and tips for a smooth setup.
+
+---
+
+## Expected Results
+
+- The GitHub Actions workflow runs on each pull request.
+- ReviewCopilot analyzes code changes and posts comments or suggestions directly on the PR.
+
+---
+
+## 🖼️ Example Review Result
+
+Below is a real example of ReviewCopilot's automated review comment on a pull request:
+
+![ReviewCopilot Review Example](./examples/images/review-comments.png)
+
+See the actual review comment on GitHub: [ReviewCopilot PR Review Example](https://github.com/AlexShan2008/review-copilot/pull/25#issuecomment-2922197158)
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+---
+
+## 📄 License
 
 MIT
+
+---
+
+**For more details, see the [full documentation](./README.md) or open an issue for help.**
