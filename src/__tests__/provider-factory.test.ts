@@ -9,8 +9,8 @@ describe('ProviderFactory', () => {
       openai: {
         enabled: true,
         apiKey: 'test-key',
-        model: 'gpt-4',
-        baseURL: 'https://api.openai.com/v1/models',
+        model: 'gpt-4o-mini',
+        baseURL: 'https://api.openai.com/v1',
       },
       deepseek: {
         enabled: false,
@@ -22,8 +22,8 @@ describe('ProviderFactory', () => {
     ai: {
       provider: 'openai',
       apiKey: 'test-key',
-      model: 'gpt-4',
-      baseURL: 'https://api.openai.com/v1/models',
+      model: 'gpt-4o-mini',
+      baseURL: 'https://api.openai.com/v1',
     },
     triggers: [],
     rules: {
