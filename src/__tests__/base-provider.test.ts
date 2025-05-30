@@ -15,7 +15,7 @@ describe('BaseProvider', () => {
     provider: 'openai',
     apiKey: 'test-key',
     model: 'gpt-4',
-    baseURL: 'https://api.openai.com/v1',
+    baseURL: 'https://api.openai.com/v1/models',
     defaultHeaders: {
       'X-Custom-Header': 'test',
     },

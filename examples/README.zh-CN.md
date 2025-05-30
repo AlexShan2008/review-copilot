@@ -33,6 +33,8 @@ npx review-copilot --version
 npx review-copilot init
 ```
 
+此命令会生成 `.review-copilot.yaml` 文件，用于配置 AI 代码审查。
+
 ### 运行 ReviewCopilot
 
 ```bash

@@ -12,7 +12,7 @@ describe('ConfigManager', () => {
         enabled: true,
         apiKey: 'test-key',
         model: 'gpt-4',
-        baseURL: 'https://api.openai.com/v1',
+        baseURL: 'https://api.openai.com/v1/models',
       },
       deepseek: {
         enabled: false,

@@ -33,6 +33,8 @@ npx review-copilot --version
 npx review-copilot init
 ```
 
+This command will generate a `.review-copilot.yaml` file, which is used to configure AI review rules and settings.
+
 ### Run ReviewCopilot
 
 ```bash

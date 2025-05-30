@@ -31,6 +31,8 @@ npm install -g review-copilot
 review-copilot init
 ```
 
+This command will generate a `.review-copilot.yaml` file, which is used to configure AI review rules and settings.
+
 3. Set your AI provider key in `.env`:
 
 ```bash
@@ -56,7 +58,7 @@ providers:
     enabled: true
     apiKey: ${AI_API_KEY_OPENAI}
     model: gpt-4-turbo-preview
-    baseURL: https://api.openai.com/v1
+    baseURL: https://api.openai.com/v1/models
 
   deepseek:
     enabled: false
@@ -148,7 +150,7 @@ providers:
     enabled: true
     apiKey: ${AI_API_KEY_OPENAI}
     model: gpt-4-turbo-preview
-    baseURL: https://api.openai.com/v1
+    baseURL: https://api.openai.com/v1/models
     # Optional settings
     defaultHeaders:
       'X-Custom-Header': 'value'
