@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.1](https://github.com/AlexShan2008/review-copilot/compare/v0.4.0...v0.4.1) (2025-05-30)
+
+
+### Bug Fixes
+
+* correct incorrect file initialization during init ([724d5d4](https://github.com/AlexShan2008/review-copilot/commit/724d5d469a609067e0d94d5474549808214e7c1c))
+
 ## [0.4.0](https://github.com/AlexShan2008/review-copilot/compare/v0.3.0...v0.4.0) (2025-05-29)
 
 ## [0.3.0](https://github.com/AlexShan2008/review-copilot/compare/v0.2.6...v0.3.0) (2025-05-29)
