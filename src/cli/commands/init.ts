@@ -5,11 +5,20 @@ import chalk from 'chalk';
 import ora from 'ora';
 
 const defaultConfig = `# AI Provider Configuration
-ai:
-  provider: openai                    # Support: openai, deepseek, anthropic, gemini
-  apiKey: \${AI_API_KEY_OPENAI}      # Use AI_API_KEY_{PROVIDER} format
-  model: gpt-3.5-turbo               # Default model for OpenAI
-  # baseURL: optional_api_endpoint   # Optional base URL for API endpoint
+providers:
+  openai:
+    enabled: false
+    apiKey: \${AI_API_KEY_OPENAI}
+    model: gpt-4-turbo-preview
+    baseURL: https://chat.rightcapital.ai/v1
+    reviewLanguage: 'zh'
+
+  deepseek:
+    enabled: true
+    apiKey: \${AI_API_KEY_DEEPSEEK}
+    model: deepseek-chat
+    baseURL: https://api.deepseek.com/v1
+    reviewLanguage: 'zh'
 
 # Review Triggers
 triggers:
@@ -21,11 +30,11 @@ triggers:
 rules:
   commitMessage:
     enabled: true
-    pattern: '^(feat|fix|docs|style|refactor|test|chore)(?:\([^)]+\))?: .{1,50}'
+    pattern: '^(feat|fix|docs|style|refactor|test|chore|ci)(\\(.+\\))?: .{1,50}'
     prompt: |
       Review this commit message and ensure it follows conventional commits format.
       Format: <type>(<scope>): <description>
-      Types: feat, fix, docs, style, refactor, test, chore
+      Types: feat, fix, docs, style, refactor, test, chore, ci
 
   branchName:
     enabled: true
@@ -37,6 +46,24 @@ rules:
 
   codeChanges:
     enabled: true
+    filePatterns:
+      # Include patterns
+      - '**/*.{ts,tsx}'
+      - '**/*.{js,jsx}'
+      - '**/*.{json}'
+      - '**/*.{yaml}'
+      - '**/*.{yml}'
+      # Exclude patterns
+      - '!package-lock.json'
+      - '!**/package-lock.json'
+      - '!yarn.lock'
+      - '!**/yarn.lock'
+      - '!pnpm-lock.yaml'
+      - '!**/pnpm-lock.yaml'
+      - '!**/dist/**'
+      - '!**/node_modules/**'
+      - '!**/*.min.js'
+      - '!**/*.bundle.js'
     prompt: |
       Review the code changes for:
       1. Code style and formatting
@@ -47,10 +74,10 @@ rules:
 
 # Custom Review Points
 customReviewPoints:
-  - name: "Security Check"
-    prompt: "Review code for security vulnerabilities..."
-  - name: "Performance Review"
-    prompt: "Analyze code for performance bottlenecks..."
+  - name: 'Security Check'
+    prompt: 'Review code for security vulnerabilities...'
+  - name: 'Performance Review'
+    prompt: 'Analyze code for performance bottlenecks...'
 `;
 
 export async function initCommand(): Promise<void> {
