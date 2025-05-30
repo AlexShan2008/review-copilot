@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.2](https://github.com/AlexShan2008/review-copilot/compare/v0.4.1...v0.4.2) (2025-05-30)
+
+
+### Features
+
+* add GitHub example ([c379109](https://github.com/AlexShan2008/review-copilot/commit/c379109ace6dfedec52f0353a3a00c0a69c99356))
+
+
+### CI
+
+* add npm auto-publish workflow on main branch ([b3a387c](https://github.com/AlexShan2008/review-copilot/commit/b3a387ca3b8c50ff53bc9afc81855fdf63dfdc5c))
+
+
+### Documentation
+
+* add bilingual README (English & Chinese) ([5cff08b](https://github.com/AlexShan2008/review-copilot/commit/5cff08b182b74a46b8364dfc22cdcab7576a402d))
+* update README ([2bc3254](https://github.com/AlexShan2008/review-copilot/commit/2bc325423912faae3492a94fbb8df813cd43810c))
+
 ### [0.4.1](https://github.com/AlexShan2008/review-copilot/compare/v0.4.0...v0.4.1) (2025-05-30)
 
 
