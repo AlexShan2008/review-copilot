@@ -1,5 +1,9 @@
 English | [中文](README.zh-CN.md)
 
+<p align="center">
+  <img src="../public/logo.svg" alt="ReviewCopilot Logo" width="180" />
+</p>
+
 # Example: GitHub Actions Integration
 
 This guide shows you how to set up **ReviewCopilot** for automated code review in your GitHub repository using GitHub Actions.
