@@ -1,0 +1,23 @@
+name: Auto Create PR to Main
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+jobs:
+  auto-create-pr:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-actions[bot]'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Create Pull Request to main
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
+          title: 'Auto PR: ${{ github.ref_name }} → main'
+          body: |
+            This pull request was automatically created when the branch `${{ github.ref_name }}` was pushed.
