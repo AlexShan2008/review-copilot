@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="../public/logo.svg" alt="ReviewCopilot Logo" width="180" />
+</p>
+
 中文 | [English](README.md)
 
 # 示例：GitHub Actions 集成

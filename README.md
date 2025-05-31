@@ -1,5 +1,9 @@
 English | [中文](README.zh-CN.md)
 
+<p align="center">
+  <img src="public/logo.svg" alt="ReviewCopilot Logo" width="180" />
+</p>
+
 # ReviewCopilot
 
 [![CI Status](https://github.com/AlexShan2008/review-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/AlexShan2008/review-copilot/actions)
