@@ -6,6 +6,10 @@ on:
       - main
       - master
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   auto-pr:
     runs-on: ubuntu-latest
