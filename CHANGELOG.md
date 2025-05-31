@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.5](https://github.com/AlexShan2008/review-copilot/compare/v0.4.4...v0.4.5) (2025-05-31)
+
+
+### Bug Fixes
+
+* auto create pull request fail ([a3ad3aa](https://github.com/AlexShan2008/review-copilot/commit/a3ad3aa6ed939c798c051f3e0c4e44baaa9997a0))
+* auto create pull request fail ([502fbe7](https://github.com/AlexShan2008/review-copilot/commit/502fbe72a7916d8c86da057bc5d73d7225887a91))
+* **workflow:** add explicit permissions for auto PR creation ([5e711cc](https://github.com/AlexShan2008/review-copilot/commit/5e711cce6bb19e34dc9d3ccfd20437f8d01f8ec6))
+
+
+### Refactors
+
+* remove explicit permissions for auto PR creation ([3894d7d](https://github.com/AlexShan2008/review-copilot/commit/3894d7d1296c3a844421354eedce48178e5d22e7))
+
+
+### Documentation
+
+* add logo ([c44b2bf](https://github.com/AlexShan2008/review-copilot/commit/c44b2bff2c1d7591f28996d0fcb8e9c10b95eb0c))
+
 ### [0.4.4](https://github.com/AlexShan2008/review-copilot/compare/v0.4.3...v0.4.4) (2025-05-30)
 
 
