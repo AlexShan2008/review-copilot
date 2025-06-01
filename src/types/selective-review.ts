@@ -4,8 +4,10 @@ export interface SelectiveReviewContext {
   // The specific lines being reviewed (start and end line numbers)
   startLine: number;
   endLine: number;
-  // The actual code content to review
-  codeContent: string;
+  // The full file content
+  fullFileContent: string;
+  // The actual code content to review (selected portion)
+  selectedCodeContent: string;
   // The comment that triggered the review
   triggerComment: string;
   // The PR number
@@ -14,6 +16,10 @@ export interface SelectiveReviewContext {
   owner: string;
   // The repository name
   repo: string;
+  // The comment ID that triggered the review (for thread replies)
+  commentId?: number;
+  // The comment thread ID (for review comments)
+  threadId?: string;
 }
 
 export interface SelectiveReviewResult {

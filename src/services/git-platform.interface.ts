@@ -13,6 +13,20 @@ export interface IGitPlatformService {
     prNumber: number,
     comment: string,
   ): Promise<void>;
+  replyToComment(
+    owner: string,
+    repo: string,
+    prNumber: number,
+    commentId: number,
+    comment: string,
+  ): Promise<void>;
+  replyToReviewComment(
+    owner: string,
+    repo: string,
+    prNumber: number,
+    threadId: string,
+    comment: string,
+  ): Promise<void>;
   getCurrentBranch(): Promise<string>;
   getCommitMessage(): Promise<string>;
   getFileContent(

@@ -38,6 +38,46 @@ export class GitLabService implements IGitPlatformService {
     );
   }
 
+  async replyToComment(
+    owner: string,
+    repo: string,
+    prNumber: number,
+    commentId: number,
+    comment: string,
+  ): Promise<void> {
+    // Get the original comment
+    const originalNote = await this.client.MergeRequestNotes.show(
+      `${owner}/${repo}`,
+      prNumber,
+      commentId,
+    );
+
+    // Create a reply comment with reference to the original
+    const replyComment = `> ${originalNote.body}\n\n${comment}`;
+    await this.client.MergeRequestNotes.create(
+      `${owner}/${repo}`,
+      prNumber,
+      replyComment,
+    );
+  }
+
+  async replyToReviewComment(
+    owner: string,
+    repo: string,
+    prNumber: number,
+    threadId: string,
+    comment: string,
+  ): Promise<void> {
+    // GitLab doesn't have a direct review comment API
+    // We'll create a new comment with a reference to the thread
+    const replyComment = `> Thread ${threadId}\n\n${comment}`;
+    await this.client.MergeRequestNotes.create(
+      `${owner}/${repo}`,
+      prNumber,
+      replyComment,
+    );
+  }
+
   async getCurrentBranch(): Promise<string> {
     return process.env.CI_COMMIT_REF_NAME || '';
   }
