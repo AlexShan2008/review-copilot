@@ -19,13 +19,36 @@ async function processReview(
   reviewType: string,
   results: ReviewResult[],
 ): Promise<void> {
-  const result = await aiProvider.review(prompt, content);
-  results.push({
-    success: result?.success ?? false,
-    message: `${reviewType} Review`,
-    suggestions: [result],
-    errors: [],
-  });
+  try {
+    const result = await aiProvider.review(prompt, content);
+    // If we get a result, consider it a successful review
+    results.push({
+      success: result?.success ?? false,
+      message: `${reviewType} Review`,
+      suggestions: result
+        ? [
+            {
+              message: result,
+              severity: 'info',
+            },
+          ]
+        : [],
+      errors: [],
+    });
+  } catch (error) {
+    // If there's an error, add it to the results
+    results.push({
+      success: false,
+      message: `${reviewType} Review`,
+      suggestions: [],
+      errors: [
+        {
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
+        },
+      ],
+    });
+  }
 }
 
 export async function reviewCommand(
@@ -248,30 +271,31 @@ export async function reviewCommand(
 function displayResults(results: ReviewResult[]): void {
   console.log('\n📝 Review Results:\n');
 
-  const allPassed = results.every(
-    (result) =>
-      result.success &&
-      (!result.suggestions || result.suggestions.length === 0) &&
-      (!result.errors || result.errors.length === 0),
-  );
+  const allPassed = results.every((result) => result.success);
 
   if (allPassed) {
     console.log(chalk.green('🎉 All checks passed! Code looks great!\n'));
   }
 
   results.forEach((result) => {
-    // const icon = result.success ? '✅' : '❌';
-    console.log(`${chalk.bold(result.message)}`);
+    const icon = result.success ? '✅' : '❌';
+    console.log(`${icon} ${chalk.bold(result.message)}`);
 
     if (result.suggestions?.length) {
       result.suggestions.forEach((suggestion) => {
-        console.log(chalk.gray('  └─ ') + suggestion);
+        const severity =
+          suggestion.severity === 'error'
+            ? chalk.red
+            : suggestion.severity === 'warning'
+              ? chalk.yellow
+              : chalk.gray;
+        console.log(severity('  └─ ') + suggestion.message);
       });
     }
 
     if (result.errors?.length) {
       result.errors.forEach((error) => {
-        console.log(chalk.red('  └─ ') + error);
+        console.log(chalk.red('  └─ ') + error.message);
       });
     }
 
@@ -283,18 +307,24 @@ function formatReviewComment(results: ReviewResult[]): string {
   let comment = '## 🤖 ReviewCopilot Report\n\n';
 
   results.forEach((result) => {
-    // const icon = result.success ? '✅' : '❌';
-    comment += `### ${result.message}\n\n`;
+    const icon = result.success ? '✅' : '❌';
+    comment += `### ${icon} ${result.message}\n\n`;
 
     if (result.suggestions?.length) {
       result.suggestions.forEach((suggestion) => {
-        comment += `- ${suggestion}\n`;
+        const severity =
+          suggestion.severity === 'error'
+            ? '❗'
+            : suggestion.severity === 'warning'
+              ? '⚠️'
+              : '💡';
+        comment += `- ${severity} ${suggestion.message}\n`;
       });
     }
 
     if (result.errors?.length) {
       result.errors.forEach((error) => {
-        comment += `- ❗ ${error}\n`;
+        comment += `- ❗ ${error.message}\n`;
       });
     }
 

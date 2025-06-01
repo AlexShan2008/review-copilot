@@ -69,4 +69,37 @@ export class GitHubService implements IGitPlatformService {
   async getCommitMessage(): Promise<string> {
     return execSync('git log -1 --pretty=%B').toString().trim();
   }
+
+  async getFileContent(
+    owner: string,
+    repo: string,
+    filePath: string,
+    prNumber: number,
+  ): Promise<string | null> {
+    try {
+      // Get the PR details to get the head SHA
+      const { data: pullRequest } = await this.client.pulls.get({
+        owner,
+        repo,
+        pull_number: prNumber,
+      });
+
+      // Get the file content from the PR's head branch
+      const { data: fileData } = await this.client.repos.getContent({
+        owner,
+        repo,
+        path: filePath,
+        ref: pullRequest.head.sha,
+      });
+
+      if ('content' in fileData && fileData.content) {
+        return Buffer.from(fileData.content, 'base64').toString('utf-8');
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Error getting file content:', error);
+      return null;
+    }
+  }
 }

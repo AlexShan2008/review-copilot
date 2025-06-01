@@ -1,0 +1,54 @@
+name: Selective Code Review
+
+on:
+  issue_comment:
+    types: [created, edited]
+
+jobs:
+  selective-review:
+    if: |
+      github.event.issue.pull_request && 
+      contains(github.event.comment.body, '@review-copilot')
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run selective review
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Extract file path and line numbers from the comment
+          COMMENT="${{ github.event.comment.body }}"
+          FILE_PATH=$(echo "$COMMENT" | grep -o '```.*:' | sed 's/```//g' | sed 's/://g' | head -n1)
+          LINE_NUMBERS=$(echo "$COMMENT" | grep -o ':[0-9]*-[0-9]*' | sed 's/://g' | head -n1)
+
+          if [ -z "$FILE_PATH" ] || [ -z "$LINE_NUMBERS" ]; then
+            echo "Could not extract file path or line numbers from comment"
+            exit 1
+          fi
+
+          START_LINE=$(echo $LINE_NUMBERS | cut -d'-' -f1)
+          END_LINE=$(echo $LINE_NUMBERS | cut -d'-' -f2)
+
+          # Run the selective review command
+          npx ts-node src/cli/index.ts selective-review \
+            --config .review-copilot.json \
+            --file "$FILE_PATH" \
+            --start-line "$START_LINE" \
+            --end-line "$END_LINE" \
+            --comment "$COMMENT"
