@@ -48,7 +48,7 @@ This creates a `.review-copilot.yaml` file in your project root.
 
 ### 4. Add the GitHub Actions Workflow
 
-Create a file at `.github/workflows/review.yml` with the following content:
+Create a file named `.github/workflows/review.yml` in the root directory of the project with the following content:
 
 ```yaml
 name: ReviewCopilot Code Review
@@ -85,8 +85,13 @@ Edit `.review-copilot.yaml` to match your review needs. For example, you can spe
 
 ### 6. Test the Integration
 
-- Open a pull request in your repository.
+- Manually open a pull request in your repository. If you're using `github-script` to create the PR automatically, refer to [auto-pr example](../.github/workflows/auto-pr.yml).
+
 - ReviewCopilot will automatically run and post review comments if issues are found.
+
+**Note:** When using the repository's `GITHUB_TOKEN` to perform tasks, events triggered by that token—except for `workflow_dispatch` and `repository_dispatch`—**do not** trigger new workflow runs. This is to prevent unintended recursive executions.
+
+For more details, see the [GitHub documentation](https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow).
 
 ---
 
