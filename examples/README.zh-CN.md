@@ -48,7 +48,7 @@ npx review-copilot init
 
 ### 4. 添加 GitHub Actions 工作流
 
-在 `.github/workflows/review.yml` 文件中添加如下内容：
+在项目根目录创建 `.github/workflows/review.yml` 文件，内容如下：
 
 ```yaml
 name: ReviewCopilot Code Review
@@ -77,16 +77,21 @@ jobs:
         run: npx review-copilot review
 ```
 
-> **提示：** 可根据实际情况调整工作流内容。
+> **提示：** 根据你的包管理器或 CI 设置调整工作流配置。
 
 ### 5. （可选）自定义 `.review-copilot.yaml`
 
-根据实际需求编辑 `.review-copilot.yaml`，如指定审查文件、提交信息规范、自定义审查点等。详见 [主配置示例](../.review-copilot.yaml)。
+编辑 `.review-copilot.yaml` 以匹配你的审查需求。例如，你可以指定要审查的文件、设置提交信息规则或添加自定义审查点。详情请参见[主配置示例](../.review-copilot.yaml)。
 
-### 6. 测试集成效果
+### 6. 测试集成
 
-- 新建或更新一个 Pull Request
-- ReviewCopilot 会自动运行并在 PR 上评论审查结果
+- 在仓库中手动创建一个 Pull Request。如果你使用 `github-script` 自动创建 PR，请参考 [auto-pr 示例](../.github/workflows/auto-pr.yml)。
+
+- ReviewCopilot 将自动运行并在发现问题时发布审查评论。
+
+**注意：** 当使用仓库的 `GITHUB_TOKEN` 执行任务时，除了 `workflow_dispatch` 和 `repository_dispatch` 之外，由该令牌触发的事件**不会**触发新的工作流运行。这是为了防止意外的递归执行。
+
+更多详情，请参见 [GitHub 文档](https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow)。
 
 ---
 

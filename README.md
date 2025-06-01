@@ -13,6 +13,14 @@ English | [中文](README.zh-CN.md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://makeapullrequest.com)
 
+> **Notice**
+>
+> - Currently, code review only supports GitHub platform, GitLab support is under development
+> - Supported AI models include OpenAI and DeepSeek
+>   - OpenAI support is still in testing phase, PRs are welcome if you encounter any issues, and I'll address them promptly
+>   - DeepSeek support is relatively stable
+> - Sincere thanks to all contributors for their support. PRs are welcome to help improve the project
+
 > **AI-powered code review assistant for GitHub, with customizable rules and multi-provider support.**
 
 ---
@@ -24,7 +32,6 @@ English | [中文](README.zh-CN.md)
 - **Flexible File Filtering**: Use glob patterns to include/exclude files for review.
 - **CI/CD Integration**: Seamlessly integrates with GitHub Actions and GitLab CI (coming soon).
 - **Secure & Configurable**: API keys via environment variables, YAML-based config.
-- **Beautiful CLI**: User-friendly interface with progress indicators.
 
 ---
 
@@ -88,7 +95,7 @@ rules:
 
 - **Environment Variables**: Use `${VAR_NAME}` in your config to reference values from `.env`.
 
-For advanced configuration and custom review points, see the [Configuration Example](#configuration).
+For advanced configuration and custom review points, see the [Configuration Example](examples/README.md).
 
 ---
 
@@ -134,10 +141,6 @@ providers:
     apiKey: ${AI_API_KEY_OPENAI}
     model: gpt-4o-mini
     baseURL: https://api.openai.com/v1
-    # Optional:
-    defaultHeaders:
-      'X-Custom-Header': 'value'
-    timeout: 60000
 
   deepseek:
     enabled: false
@@ -161,7 +164,7 @@ ReviewCopilot detects CI environments and can post review comments directly on p
 
 See the [examples/README.md](examples/README.md) for a step-by-step guide to integrating ReviewCopilot with GitHub Actions, including:
 
-- Setting up a workflow file ([example](examples/github/.github/workflows/review.yml))
+- Setting up a workflow file ([example](examples/.github/workflows/review.yml))
 - Configuring repository secrets for your AI API keys
 - Installing and initializing ReviewCopilot in your project
 - Running code review automatically on pull requests
@@ -196,7 +199,3 @@ Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 ## 📄 License
 
 MIT
-
----
-
-**For more details, see the [full documentation](./README.md) or open an issue for help.**
