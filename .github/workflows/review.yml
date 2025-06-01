@@ -3,14 +3,14 @@ name: Code Review
 on:
   pull_request:
     types: [opened, synchronize]
-  pull_request_review_comment:
-    types: [created]
-  issue_comment:
-    types: [created, edited]
 
 jobs:
   review:
     runs-on: ubuntu-latest
+    # Run review when:
+    # 1. PR is opened
+    # 2. PR has actual code changes (before != after)
+    if: github.event.action == 'opened' || github.event.before != github.event.after
     permissions:
       pull-requests: write
       contents: read

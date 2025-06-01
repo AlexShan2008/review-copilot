@@ -17,13 +17,53 @@ export class GitHubService implements IGitPlatformService {
     owner: string,
     repo: string,
     prNumber: number,
-    body: string,
+    comment: string,
   ): Promise<void> {
     await this.client.issues.createComment({
       owner,
       repo,
       issue_number: prNumber,
-      body,
+      body: comment,
+    });
+  }
+
+  async replyToComment(
+    owner: string,
+    repo: string,
+    prNumber: number,
+    commentId: number,
+    comment: string,
+  ): Promise<void> {
+    // GitHub doesn't have a direct reply-to-comment API
+    // Instead, we'll create a new comment with a reference to the original
+    const { data: originalComment } = await this.client.issues.getComment({
+      owner,
+      repo,
+      comment_id: commentId,
+    });
+
+    const replyComment = `> ${originalComment.body}\n\n${comment}`;
+    await this.client.issues.createComment({
+      owner,
+      repo,
+      issue_number: prNumber,
+      body: replyComment,
+    });
+  }
+
+  async replyToReviewComment(
+    owner: string,
+    repo: string,
+    prNumber: number,
+    threadId: string,
+    comment: string,
+  ): Promise<void> {
+    await this.client.pulls.createReplyForReviewComment({
+      owner,
+      repo,
+      pull_number: prNumber,
+      comment_id: parseInt(threadId, 10),
+      body: comment,
     });
   }
 

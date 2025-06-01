@@ -87,12 +87,7 @@ export async function initCommand(): Promise<void> {
     const configPath = path.join(process.cwd(), '.review-copilot.yaml');
 
     if (existsSync(configPath)) {
-      spinner.fail(chalk.yellow('Configuration file already exists!'));
-      console.log(
-        chalk.blue(
-          'To overwrite, please remove the existing .review-copilot.yaml file first.',
-        ),
-      );
+      spinner.succeed(chalk.blue('Using existing configuration file'));
       return;
     }
 

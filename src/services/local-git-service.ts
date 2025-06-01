@@ -55,6 +55,34 @@ export class LocalGitService implements IGitPlatformService {
     console.log('=====================\n');
   }
 
+  async replyToComment(
+    owner: string,
+    repo: string,
+    prNumber: number,
+    commentId: number,
+    comment: string,
+  ): Promise<void> {
+    // In local development, just log the reply
+    console.log('\n=== Reply to Comment ===');
+    console.log(`Comment ID: ${commentId}`);
+    console.log(comment);
+    console.log('=====================\n');
+  }
+
+  async replyToReviewComment(
+    owner: string,
+    repo: string,
+    prNumber: number,
+    threadId: string,
+    comment: string,
+  ): Promise<void> {
+    // In local development, just log the review reply
+    console.log('\n=== Reply to Review Comment ===');
+    console.log(`Thread ID: ${threadId}`);
+    console.log(comment);
+    console.log('=====================\n');
+  }
+
   async getCurrentBranch(): Promise<string> {
     return execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
   }

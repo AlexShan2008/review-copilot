@@ -3,52 +3,130 @@ name: Selective Code Review
 on:
   issue_comment:
     types: [created, edited]
+  pull_request_review_comment:
+    types: [created]
+
+# Prevent concurrent runs of the same workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number }}-${{ github.event.comment.id }}
+  cancel-in-progress: true
 
 jobs:
   selective-review:
+    # Only run on PR comments that mention @review-copilot
     if: |
-      github.event.issue.pull_request && 
-      contains(github.event.comment.body, '@review-copilot')
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@review-copilot')) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@review-copilot'))
     runs-on: ubuntu-latest
+    # Set a timeout to prevent hanging workflows
+    timeout-minutes: 60
+    # Set permissions to minimum required
     permissions:
       pull-requests: write
       contents: read
+      checks: write
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          # Only fetch the current PR to speed up checkout
+          fetch-depth: 1
+          ref: ${{ github.event.pull_request.head.sha || github.event.issue.pull_request.head.sha }}
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Get pnpm store directory
+        id: pnpm-cache
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Initialize ReviewCopilot
+        run: node -r dotenv/config dist/cli/index.js init
+        env:
+          # Only pass necessary environment variables
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run selective review
         env:
+          # Use GitHub's built-in token for authentication
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Use repository secrets for API keys
+          AI_API_KEY_OPENAI: ${{ secrets.AI_API_KEY_OPENAI }}
+          AI_API_KEY_DEEPSEEK: ${{ secrets.AI_API_KEY_DEEPSEEK }}
+          # Pass event context
+          GITHUB_EVENT_NUMBER: ${{ github.event.issue.number || github.event.number }}
+          GITHUB_EVENT_TYPE: ${{ github.event_name }}
+          GITHUB_COMMENT_ID: ${{ github.event.comment.id }}
+          GITHUB_COMMENT_BODY: ${{ github.event.comment.body }}
         run: |
           # Extract file path and line numbers from the comment
-          COMMENT="${{ github.event.comment.body }}"
-          FILE_PATH=$(echo "$COMMENT" | grep -o '```.*:' | sed 's/```//g' | sed 's/://g' | head -n1)
-          LINE_NUMBERS=$(echo "$COMMENT" | grep -o ':[0-9]*-[0-9]*' | sed 's/://g' | head -n1)
+          if [ "${{ github.event_name }}" == "pull_request_review_comment" ]; then
+            FILE_PATH="${{ github.event.comment.path }}"
+            if [ -n "${{ github.event.comment.start_line }}" ]; then
+              START_LINE="${{ github.event.comment.start_line }}"
+              END_LINE="${{ github.event.comment.line }}"
+            else
+              START_LINE="${{ github.event.comment.line }}"
+              END_LINE="${{ github.event.comment.line }}"
+            fi
+            COMMENT_ID="${{ github.event.comment.id }}"
+            THREAD_ID="${{ github.event.comment.in_reply_to_id || github.event.comment.id }}"
+          else
+            # For regular comments, extract from comment body
+            COMMENT="${{ github.event.comment.body }}"
+            FILE_PATH=$(echo "$COMMENT" | grep -o '```.*:' | sed 's/```//g' | sed 's/://g' | head -n1)
+            # Extract the line specifier (e.g., 17-19 or 19)
+            LINE_SPEC=$(echo "$COMMENT" | grep -o ':[0-9]\+-[0-9]\+\|:[0-9]\+' | head -n1 | sed 's/://')
+            if [[ "$LINE_SPEC" == *-* ]]; then
+              START_LINE=$(echo "$LINE_SPEC" | cut -d'-' -f1)
+              END_LINE=$(echo "$LINE_SPEC" | cut -d'-' -f2)
+            else
+              START_LINE="$LINE_SPEC"
+              END_LINE="$LINE_SPEC"
+            fi
+            COMMENT_ID="${{ github.event.comment.id }}"
+            THREAD_ID=""
+          fi
 
-          if [ -z "$FILE_PATH" ] || [ -z "$LINE_NUMBERS" ]; then
-            echo "Could not extract file path or line numbers from comment"
+          if [ -z "$FILE_PATH" ] || [ -z "$START_LINE" ] || [ -z "$END_LINE" ]; then
+            echo "::error::Could not extract file path or line numbers from comment"
             exit 1
           fi
 
-          START_LINE=$(echo $LINE_NUMBERS | cut -d'-' -f1)
-          END_LINE=$(echo $LINE_NUMBERS | cut -d'-' -f2)
-
           # Run the selective review command
-          npx ts-node src/cli/index.ts selective-review \
-            --config .review-copilot.json \
+          node -r dotenv/config dist/cli/index.js selective-review \
             --file "$FILE_PATH" \
             --start-line "$START_LINE" \
             --end-line "$END_LINE" \
-            --comment "$COMMENT"
+            --comment "${{ github.event.comment.body }}" \
+            --comment-id "$COMMENT_ID" \
+            --thread-id "${THREAD_ID:-}"
+        # Add error handling with GitHub's built-in commands
+        if: success()
+        continue-on-error: false

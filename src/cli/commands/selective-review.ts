@@ -12,6 +12,8 @@ interface SelectiveReviewCommandOptions {
   startLine: number;
   endLine: number;
   comment: string;
+  commentId?: number;
+  threadId?: string;
 }
 
 export async function selectiveReviewCommand(
@@ -63,19 +65,23 @@ export async function selectiveReviewCommand(
       return false;
     }
 
+    // Fix: Use inclusive range for GitHub's 1-based line numbers
     const selectedLines = lines.slice(options.startLine - 1, options.endLine);
-    const codeContent = selectedLines.join('\n');
+    const selectedCodeContent = selectedLines.join('\n');
 
-    // Create review context
+    // Create review context with full file content for better context
     const context: SelectiveReviewContext = {
       filePath: options.file,
       startLine: options.startLine,
       endLine: options.endLine,
-      codeContent,
+      fullFileContent: fileContent, // Pass the entire file content
+      selectedCodeContent,
       triggerComment: options.comment,
       prNumber: prDetails.prNumber,
       owner: prDetails.owner,
       repo: prDetails.repo,
+      commentId: options.commentId,
+      threadId: options.threadId,
     };
 
     // Process the review
