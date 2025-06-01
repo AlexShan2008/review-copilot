@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.6](https://github.com/AlexShan2008/review-copilot/compare/v0.4.5...v0.4.6) (2025-06-01)
+
+
+### Features
+
+* enable deepseek ([75b4e87](https://github.com/AlexShan2008/review-copilot/commit/75b4e87c27b1f7260835d61d3df32d8cc1469212))
+
+
+### Bug Fixes
+
+* ensure auto-created PR triggers CI and review actions ([2bca505](https://github.com/AlexShan2008/review-copilot/commit/2bca505dcb2af8997c217a57c84602dfe0af1f39))
+
+
+### Documentation
+
+* update README ([9961ffe](https://github.com/AlexShan2008/review-copilot/commit/9961ffe3f6184f622bde036171c2f9e1c4f32aa6))
+
 ### [0.4.5](https://github.com/AlexShan2008/review-copilot/compare/v0.4.4...v0.4.5) (2025-05-31)
 
 
