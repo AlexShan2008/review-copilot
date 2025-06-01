@@ -3,6 +3,7 @@
 import { Command } from 'commander';
 import { initCommand } from './commands/init';
 import { reviewCommand } from './commands/review';
+import { selectiveReviewCommand } from './commands/selective-review';
 import { version } from '../../package.json';
 
 const program = new Command();
@@ -19,10 +20,37 @@ program
 
 program
   .command('review')
-  .description('Review code changes')
-  .option('-c, --config <path>', 'Path to config file', '.review-copilot.yaml')
+  .description('Review all changes in the current PR')
+  .option(
+    '-c, --config <path>',
+    'Path to the config file',
+    '.review-copilot.yaml',
+  )
+  .option(
+    '-b, --base-branch <branch>',
+    'Base branch to compare against',
+    'main',
+  )
   .action(async (options) => {
     const success = await reviewCommand(options);
+    if (!success) {
+      process.exit(1);
+    }
+  });
+
+program
+  .command('selective-review')
+  .description('Review specific code in a PR based on a comment')
+  .requiredOption('-c, --config <path>', 'Path to the config file')
+  .requiredOption('-f, --file <path>', 'Path to the file to review')
+  .requiredOption('-s, --start-line <number>', 'Start line number', parseInt)
+  .requiredOption('-e, --end-line <number>', 'End line number', parseInt)
+  .requiredOption(
+    '-m, --comment <text>',
+    'The comment that triggered the review',
+  )
+  .action(async (options) => {
+    const success = await selectiveReviewCommand(options);
     if (!success) {
       process.exit(1);
     }

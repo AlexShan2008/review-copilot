@@ -15,4 +15,10 @@ export interface IGitPlatformService {
   ): Promise<void>;
   getCurrentBranch(): Promise<string>;
   getCommitMessage(): Promise<string>;
+  getFileContent(
+    owner: string,
+    repo: string,
+    filePath: string,
+    prNumber: number,
+  ): Promise<string | null>;
 }

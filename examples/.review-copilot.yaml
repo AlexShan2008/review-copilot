@@ -23,7 +23,7 @@ triggers:
 # Code Review Rules
 rules:
   commitMessage:
-    enabled: true
+    enabled: false
     pattern: '^(feat|fix|docs|style|refactor|test|chore|ci)(\\(.+\\))?: .{1,50}'
     prompt: |
       Review this commit message and ensure it follows conventional commits format.
@@ -31,7 +31,7 @@ rules:
       Types: feat, fix, docs, style, refactor, test, chore, ci
 
   branchName:
-    enabled: true
+    enabled: false
     pattern: '^(feature|bugfix|hotfix|release)/[A-Z]+-[0-9]+-.+'
     prompt: |
       Verify branch name follows the pattern:

@@ -38,8 +38,17 @@ export interface Config {
 export interface ReviewResult {
   success: boolean;
   message: string;
-  suggestions?: string[];
-  errors?: string[];
+  suggestions: Array<{
+    message: string;
+    severity: 'info' | 'warning' | 'error';
+    file?: string;
+    line?: number;
+  }>;
+  errors: Array<{
+    message: string;
+    file?: string;
+    line?: number;
+  }>;
 }
 
 export interface AIProviderConfig {

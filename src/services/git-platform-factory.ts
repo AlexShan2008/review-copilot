@@ -1,6 +1,7 @@
 import { IGitPlatformService } from './git-platform.interface';
 import { GitHubService } from './github-service';
 import { GitLabService } from './gitlab-service';
+import { LocalGitService } from './local-git-service';
 
 export class GitPlatformFactory {
   static createService(): IGitPlatformService {
@@ -12,6 +13,7 @@ export class GitPlatformFactory {
       return new GitLabService(process.env.GITLAB_TOKEN!);
     }
 
-    throw new Error('Unsupported CI platform');
+    // For local development, use LocalGitService
+    return new LocalGitService();
   }
 }
