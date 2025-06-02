@@ -1,6 +1,7 @@
 import { ConfigManager } from '../../../config/config-manager';
 import { ProviderFactory } from '../../../providers/provider-factory';
 import { getVcsProvider } from '../../../utils/vcs-factory';
+import { GitPlatformFactory } from '../../../services/git-platform-factory';
 
 // Type definitions for mockCommit and mockConfig
 export interface MockFile {
@@ -82,6 +83,16 @@ export const setupMocks = (
     getCurrentBranchName: jest.fn().mockResolvedValue('feature/test'),
   };
   (getVcsProvider as jest.Mock).mockReturnValue(mockVcsProvider);
+
+  const mockGitService = {
+    getPRDetails: jest
+      .fn()
+      .mockResolvedValue({ owner: 'owner', repo: 'repo', prNumber: 1 }),
+    addPRComment: jest.fn().mockResolvedValue(undefined),
+  };
+  (GitPlatformFactory.createService as jest.Mock).mockReturnValue(
+    mockGitService,
+  );
 
   return { mockConfigManager, mockProvider, mockVcsProvider };
 };
