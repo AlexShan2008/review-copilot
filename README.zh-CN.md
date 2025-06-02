@@ -6,6 +6,8 @@
 
 # ReviewCopilot
 
+**ReviewCopilot 是一款基于 AI 的代码审查助手，帮助你通过自定义规则提升代码质量。**
+
 [![CI 状态](https://github.com/AlexShan2008/review-copilot/actions/workflows/ci.yml/badge.svg)](https://github.com/AlexShan2008/review-copilot/actions)
 [![codecov](https://codecov.io/gh/AlexShan2008/review-copilot/branch/main/graph/badge.svg)](https://codecov.io/gh/AlexShan2008/review-copilot)
 [![npm 版本](https://img.shields.io/npm/v/review-copilot.svg)](https://www.npmjs.com/package/review-copilot)
@@ -20,8 +22,6 @@
 >   - OpenAI 支持仍在测试阶段，如遇到问题欢迎提交 PR，我会尽快修复相关问题
 >   - DeepSeek 支持相对稳定
 > - 诚挚感谢所有贡献者的支持，欢迎提交 PR 来帮助改进项目
-
-> **ReviewCopilot 是一款基于 AI 的代码审查助手，帮助你通过自定义规则提升代码质量。**
 
 ## 🚀 功能特性
 
