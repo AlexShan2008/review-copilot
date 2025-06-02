@@ -28,7 +28,12 @@ async function processReview(
       suggestions: result
         ? [
             {
-              message: result,
+              message:
+                typeof result === 'string'
+                  ? result
+                  : result?.message
+                    ? result.message
+                    : JSON.stringify(result),
               severity: 'info',
             },
           ]
