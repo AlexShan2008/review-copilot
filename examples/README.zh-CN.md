@@ -89,6 +89,8 @@ jobs:
 
 - ReviewCopilot 将自动运行并在发现问题时发布审查评论。
 
+- 要手动启动代码审查，只需在 Pull Request 的任何评论中 `@review-copilot`。
+
 **注意：** 当使用仓库的 `GITHUB_TOKEN` 执行任务时，除了 `workflow_dispatch` 和 `repository_dispatch` 之外，由该令牌触发的事件**不会**触发新的工作流运行。这是为了防止意外的递归执行。
 
 更多详情，请参见 [GitHub 文档](https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow)。
@@ -107,6 +109,8 @@ jobs:
 以下为 ReviewCopilot 在 Pull Request 上自动生成的审查评论示例：
 
 ![ReviewCopilot Review Example](./images/review-comments.png)
+
+![ReviewCopilot Mention Review Example](./images/mention-review.png)
 
 查看真实 PR 评论：[ReviewCopilot PR 审查示例](https://github.com/AlexShan2008/review-copilot/pull/25#issuecomment-2922197158)
 

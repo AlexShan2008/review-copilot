@@ -89,6 +89,8 @@ Edit `.review-copilot.yaml` to match your review needs. For example, you can spe
 
 - ReviewCopilot will automatically run and post review comments if issues are found.
 
+- You can also trigger a review manually by `@review-copilot` in any pull request comment.
+
 **Note:** When using the repository's `GITHUB_TOKEN` to perform tasks, events triggered by that token—except for `workflow_dispatch` and `repository_dispatch`—**do not** trigger new workflow runs. This is to prevent unintended recursive executions.
 
 For more details, see the [GitHub documentation](https://docs.github.com/en/actions/security-for-github-actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow).

@@ -36,13 +36,15 @@
 1. **安装 ReviewCopilot：**
 
    ```bash
-   npm install -g review-copilot
+   npm install -D review-copilot
+   # 或
+   pnpm add -D review-copilot
    ```
 
 2. **初始化配置：**
 
    ```bash
-   review-copilot init
+   npx review-copilot init
    ```
 
    此命令会在项目中创建 `.review-copilot.yaml` 配置文件。
@@ -58,7 +60,7 @@
 
 4. **运行代码审查：**
    ```bash
-   review-copilot review
+   npx review-copilot review
    ```
 
 ## 🛠️ 配置
@@ -198,6 +200,7 @@ providers:
 - 仓库密钥设置方法
 - 在项目中安装和初始化 ReviewCopilot
 - 在 Pull Request 上自动运行代码审查
+- 要手动启动代码审查，只需在 Pull Request 的任何评论中 `@review-copilot`
 
 文档还包含截图和实用提示，助你顺利完成集成。
 
@@ -211,6 +214,8 @@ providers:
 以下为 ReviewCopilot 在 Pull Request 上自动生成的审查评论示例：
 
 ![ReviewCopilot 审查示例](./examples/images/review-comments.png)
+
+![ReviewCopilot Mention Review Example](./examples/images/mention-review.png)
 
 查看真实 PR 评论：[ReviewCopilot PR 审查示例](https://github.com/AlexShan2008/review-copilot/pull/25#issuecomment-2922197158)
 
