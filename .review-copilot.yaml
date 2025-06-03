@@ -12,7 +12,7 @@ providers:
     apiKey: ${AI_API_KEY_DEEPSEEK}
     model: deepseek-chat
     baseURL: https://api.deepseek.com/v1
-    reviewLanguage: 'zh'
+    reviewLanguage: 'en'
 
 # Review Triggers
 triggers:
@@ -47,6 +47,7 @@ rules:
       - '**/*.{json}'
       - '**/*.{yaml}'
       - '**/*.{yml}'
+      - '**/*.{md}'
       # Exclude patterns
       - '!package-lock.json'
       - '!**/package-lock.json'

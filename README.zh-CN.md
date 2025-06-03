@@ -36,13 +36,15 @@
 1. **安装 ReviewCopilot：**
 
    ```bash
-   npm install -g review-copilot
+   npm install -D review-copilot
+   # 或
+   pnpm add -D review-copilot
    ```
 
 2. **初始化配置：**
 
    ```bash
-   review-copilot init
+   npx review-copilot init
    ```
 
    此命令会在项目中创建 `.review-copilot.yaml` 配置文件。
@@ -58,7 +60,7 @@
 
 4. **运行代码审查：**
    ```bash
-   review-copilot review
+   npx review-copilot review
    ```
 
 ## 🛠️ 配置
