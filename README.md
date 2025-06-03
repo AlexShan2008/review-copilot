@@ -40,13 +40,15 @@ English | [中文](README.zh-CN.md)
 1. **Install ReviewCopilot:**
 
    ```bash
-   npm install -g review-copilot
+   npm install -D review-copilot
+   # or
+   pnpm add -D review-copilot
    ```
 
 2. **Initialize Configuration:**
 
    ```bash
-   review-copilot init
+   npx review-copilot init
    ```
 
    This creates a `.review-copilot.yaml` file in your project.
@@ -62,7 +64,7 @@ English | [中文](README.zh-CN.md)
 
 4. **Run a Review:**
    ```bash
-   review-copilot review
+   npx review-copilot review
    ```
 
 ---
