@@ -33,7 +33,7 @@ export async function selectiveReviewCommand(
     const prDetails = await gitService.getPRDetails();
 
     if (!prDetails) {
-      spinner.fail('Could not get repository details');
+      if (spinner) spinner.fail('Could not get repository details');
       return false;
     }
 
@@ -52,16 +52,18 @@ export async function selectiveReviewCommand(
     );
 
     if (!fileContent) {
-      spinner.fail(`Could not get content for file: ${options.file}`);
+      if (spinner)
+        spinner.fail(`Could not get content for file: ${options.file}`);
       return false;
     }
 
     // Extract the specific lines to review
     const lines = fileContent.split('\n');
     if (options.startLine < 1 || options.endLine > lines.length) {
-      spinner.fail(
-        `Invalid line range: ${options.startLine}-${options.endLine}. File has ${lines.length} lines.`,
-      );
+      if (spinner)
+        spinner.fail(
+          `Invalid line range: ${options.startLine}-${options.endLine}. File has ${lines.length} lines.`,
+        );
       return false;
     }
 
@@ -85,14 +87,14 @@ export async function selectiveReviewCommand(
     };
 
     // Process the review
-    spinner.text = 'Processing selective review...';
+    if (spinner) spinner.text = 'Processing selective review...';
     const reviewService = SelectiveReviewService.getInstance();
     const result = await reviewService.processSelectiveReview(context);
 
     if (result.success) {
-      spinner.succeed('Selective review completed successfully');
+      if (spinner) spinner.succeed('Selective review completed successfully');
     } else {
-      spinner.fail('Selective review failed');
+      if (spinner) spinner.fail('Selective review failed');
       console.error(chalk.red('\nError details:'));
       result.errors.forEach((error) => {
         console.error(chalk.yellow('Error:'), error);

@@ -109,6 +109,6 @@ export async function initCommand(): Promise<void> {
   } catch (error) {
     spinner.fail(chalk.red('Failed to create configuration file'));
     console.error(error);
-    process.exit(1);
+    throw new Error('process.exit');
   }
 }
