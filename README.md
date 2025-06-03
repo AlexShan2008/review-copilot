@@ -170,6 +170,7 @@ See the [examples/README.md](examples/README.md) for a step-by-step guide to int
 - Configuring repository secrets for your AI API keys
 - Installing and initializing ReviewCopilot in your project
 - Running code review automatically on pull requests
+- To manually initiate a code review, simply `@review-copilot` in any comment on the pull request
 
 The example also includes screenshots and tips for a smooth setup.
 
@@ -187,6 +188,8 @@ The example also includes screenshots and tips for a smooth setup.
 Below is a real example of ReviewCopilot's automated review comment on a pull request:
 
 ![ReviewCopilot Review Example](./examples/images/review-comments.png)
+
+![ReviewCopilot Mention Review Example](./examples/images/mention-review.png)
 
 See the actual review comment on GitHub: [ReviewCopilot PR Review Example](https://github.com/AlexShan2008/review-copilot/pull/25#issuecomment-2922197158)
 
