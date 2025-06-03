@@ -68,33 +68,58 @@ export async function reviewCommand(
 
     spinner.text = 'Initializing AI provider...';
     const aiProvider = ProviderFactory.createProvider(config);
-
-    spinner.text = 'Getting all commits in MR...';
     const vcs = getVcsProvider();
-    const commits = await vcs.getPullRequestChanges(
-      options.baseBranch || 'main',
-    );
-
-    if (!Array.isArray(commits) || commits.length === 0) {
-      spinner.info('No commits to review.');
-      spinner.succeed('Review completed');
-      return true;
-    }
-
-    console.log(chalk.blue(`\nFound ${commits.length} commits to review`));
-
-    spinner.text = 'Analyzing commits...';
     const results: ReviewResult[] = [];
 
-    for (const commit of commits) {
-      console.log(chalk.green('\n----------------------------------------'));
-      console.log(chalk.yellow('Reviewing commit:', commit.hash));
-      console.log(chalk.cyan('Author:', commit.author));
-      console.log(chalk.cyan('Date:', commit.date));
-      console.log(chalk.white('\nMessage:'), commit.message);
+    // Review commit messages if enabled
+    if (config.rules.commitMessage.enabled) {
+      spinner.text = 'Getting commit messages for review...';
+      const commits = await vcs.getCommitMessagesForReview(
+        options.baseBranch || 'main',
+      );
 
-      // Review code changes if enabled
-      if (config.rules.codeChanges.enabled) {
+      if (Array.isArray(commits) && commits.length > 0) {
+        console.log(
+          chalk.blue(`\nFound ${commits.length} commit messages to review`),
+        );
+
+        for (const commit of commits) {
+          console.log(
+            chalk.green('\n----------------------------------------'),
+          );
+          console.log(chalk.yellow('Reviewing commit:', commit.hash));
+          console.log(chalk.cyan('Author:', commit.author));
+          console.log(chalk.cyan('Date:', commit.date));
+          console.log(chalk.white('\nMessage:'), commit.message);
+
+          await processReview(
+            aiProvider,
+            config.rules.commitMessage.prompt,
+            commit.message,
+            `Commit Message Review (${commit.hash.slice(0, 7)})`,
+            results,
+          );
+        }
+      } else {
+        spinner.info('No commit messages to review.');
+      }
+    }
+
+    // Review code changes if enabled
+    if (config.rules.codeChanges.enabled) {
+      spinner.text = 'Getting PR changes for code review...';
+      const prChanges = await vcs.getPullRequestChanges(
+        options.baseBranch || 'main',
+      );
+
+      if (Array.isArray(prChanges) && prChanges.length > 0) {
+        const commit = prChanges[0]; // We only need the final state for code review
+        console.log(chalk.green('\n----------------------------------------'));
+        console.log(chalk.blue('\nReviewing PR changes:'));
+        console.log(chalk.yellow('Head commit:', commit.hash));
+        console.log(chalk.cyan('Author:', commit.author));
+        console.log(chalk.cyan('Last updated:', commit.date));
+
         const patterns = config.rules.codeChanges.filePatterns ?? [
           '**/*.{ts,tsx,js,jsx}',
         ];
@@ -137,7 +162,7 @@ export async function reviewCommand(
           return isIncluded;
         });
 
-        console.log(chalk.blue('\nFiles to review in this commit:'));
+        console.log(chalk.blue('\nFiles to review:'));
         filteredFiles.forEach((change) => {
           if (typeof change.changes !== 'string') {
             console.error('DEBUG: change.changes is not a string', change);
@@ -176,21 +201,12 @@ export async function reviewCommand(
             aiProvider,
             config.rules.codeChanges.prompt,
             finalContent,
-            `Code Review (Commit: ${commit.hash.slice(0, 7)})`,
+            'Code Review',
             results,
           );
         }
-      }
-
-      // Review commit message if enabled
-      if (config.rules.commitMessage.enabled) {
-        await processReview(
-          aiProvider,
-          config.rules.commitMessage.prompt,
-          commit.message,
-          `Commit Message Review (${commit.hash.slice(0, 7)})`,
-          results,
-        );
+      } else {
+        spinner.info('No code changes to review.');
       }
     }
 
