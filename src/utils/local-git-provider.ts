@@ -85,4 +85,31 @@ export class LocalGitProvider implements VcsProvider {
       return [];
     }
   }
+
+  async getCommitMessagesForReview(
+    baseBranch = 'main',
+  ): Promise<CommitReviewInfo[]> {
+    try {
+      const git: SimpleGit = simpleGit();
+      const commits: CommitReviewInfo[] = [];
+      const currentBranch = await this.getCurrentBranchName();
+      const logResult = await git.log({
+        from: baseBranch,
+        to: currentBranch,
+        symmetric: false,
+      });
+
+      // For commit message review, we only need basic commit info without files
+      return logResult.all.map((commit) => ({
+        hash: commit.hash,
+        date: commit.date,
+        message: commit.message,
+        author: commit.author_name,
+        files: [], // Empty files array as we don't need file changes for message review
+      }));
+    } catch (error) {
+      console.error('Error getting commits for message review:', error);
+      return [];
+    }
+  }
 }
