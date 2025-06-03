@@ -83,30 +83,38 @@ export class GithubProvider implements VcsProvider {
       const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
       const [owner, repo] = (process.env.GITHUB_REPOSITORY || '').split('/');
 
-      const { data: pullRequest } = await octokit.pulls.get({
+      // 1. Get all commits in the PR
+      const { data: commits } = await octokit.pulls.listCommits({
         owner,
         repo,
         pull_number: prNumber,
       });
 
-      const { data: files } = await octokit.pulls.listFiles({
-        owner,
-        repo,
-        pull_number: prNumber,
-      });
+      // 2. For each commit, get its details and file diffs
+      const commitInfos: CommitReviewInfo[] = [];
+      for (const commit of commits) {
+        const sha = commit.sha;
+        const { data: commitDetails } = await octokit.repos.getCommit({
+          owner,
+          repo,
+          ref: sha,
+        });
 
-      const commitInfo: CommitReviewInfo = {
-        hash: pullRequest.head.sha,
-        date: pullRequest.updated_at,
-        message: pullRequest.title,
-        author: pullRequest.user?.login || '',
-        files: files.map((file) => ({
+        const files = (commitDetails.files || []).map((file) => ({
           file: file.filename,
           changes: file.patch || '',
-        })),
-      };
+        }));
 
-      return [commitInfo];
+        commitInfos.push({
+          hash: sha,
+          date: commit.commit.author?.date || '',
+          message: commit.commit.message,
+          author: commit.commit.author?.name || '',
+          files,
+        });
+      }
+
+      return commitInfos;
     } catch (error) {
       console.error(chalk.red('Error getting commits for review:'), error);
       return [];
