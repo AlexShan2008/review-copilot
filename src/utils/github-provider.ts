@@ -54,7 +54,9 @@ export class GithubProvider implements VcsProvider {
     ) {
       const prInfo = await this.getPRInfo();
       if (!prInfo) throw new Error('Failed to get PR info');
+
       const octokit = this.getOctokit();
+
       const response = await octokit.pulls.listCommits({
         ...prInfo,
       });
@@ -71,43 +73,7 @@ export class GithubProvider implements VcsProvider {
     return '';
   }
 
-  async getCurrentCommitMessage(): Promise<string> {
-    try {
-      if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
-        const eventPath = process.env.GITHUB_EVENT_PATH;
-        if (eventPath) {
-          // Securely read and parse the event payload
-          const event = JSON.parse(fs.readFileSync(eventPath, 'utf8'));
-          const prTitle = event.pull_request?.title;
-          const prBody = event.pull_request?.body;
-          return prTitle || prBody || '';
-        }
-      } else {
-        // For push events, fallback to git log if needed
-        const { execCommand } = await import('./exec-command');
-        const result = await execCommand('git log -1 --pretty=%B');
-        return result.stdout.trim();
-      }
-    } catch (error) {
-      console.warn(
-        chalk.yellow('Failed to get commit message from GitHub:'),
-        error,
-      );
-    }
-    return '';
-  }
-
-  async getMergeRequestCommits(baseBranch = 'main'): Promise<string[]> {
-    try {
-      const commits = await this.getCommits();
-      return commits.map((commit) => commit.sha);
-    } catch (error) {
-      console.error(chalk.red('Error getting merge request commits:'), error);
-      throw new Error('Failed to fetch GitHub merge request commits');
-    }
-  }
-
-  async getCommitMessagesForReview(
+  async getPullRequestCommits(
     baseBranch = 'main',
   ): Promise<CommitReviewInfo[]> {
     try {
@@ -129,9 +95,7 @@ export class GithubProvider implements VcsProvider {
     }
   }
 
-  async getPullRequestChanges(
-    baseBranch = 'main',
-  ): Promise<CommitReviewInfo[]> {
+  async getPullRequestFiles(baseBranch = 'main'): Promise<CommitReviewInfo[]> {
     try {
       const prInfo = await this.getPRInfo();
       if (!prInfo) throw new Error('Failed to get PR info');

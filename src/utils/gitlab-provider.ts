@@ -13,21 +13,11 @@ export class GitlabProvider implements VcsProvider {
     // TODO: Implement GitLab-specific logic
     return '';
   }
-  async getCurrentCommitMessage(): Promise<string> {
-    // TODO: Implement GitLab-specific logic
-    return '';
-  }
-  async getMergeRequestCommits(baseBranch = 'main'): Promise<string[]> {
+  async getPullRequestFiles(baseBranch = 'main'): Promise<CommitReviewInfo[]> {
     // TODO: Implement GitLab-specific logic
     return [];
   }
-  async getPullRequestChanges(
-    baseBranch = 'main',
-  ): Promise<CommitReviewInfo[]> {
-    // TODO: Implement GitLab-specific logic
-    return [];
-  }
-  async getCommitMessagesForReview(
+  async getPullRequestCommits(
     baseBranch = 'main',
   ): Promise<CommitReviewInfo[]> {
     // TODO: Implement GitLab-specific logic for getting commit messages
