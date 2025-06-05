@@ -328,8 +328,8 @@ function formatReviewComment(results: ReviewResult[]): string {
   let comment = '## 🤖 ReviewCopilot Report\n\n';
 
   results.forEach((result) => {
-    const icon = result.success ? '✅' : '❌';
-    comment += `### ${icon} ${result.message}\n\n`;
+    // const icon = result.success ? '✅' : '❌';
+    comment += `### ${result.message}\n\n`;
 
     if (result.suggestions?.length) {
       result.suggestions.forEach((suggestion) => {
