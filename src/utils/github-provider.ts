@@ -1,5 +1,7 @@
 import { Octokit } from '@octokit/rest';
 import chalk from 'chalk';
+import fs from 'fs';
+import path from 'path';
 import { VcsProvider, CommitReviewInfo } from './git-service.interface';
 
 interface GitHubPRInfo {
@@ -9,6 +11,10 @@ interface GitHubPRInfo {
 }
 
 export class GithubProvider implements VcsProvider {
+  // Cache for PR commits to avoid redundant API calls, with expiration
+  private cachedCommits: { data: any[]; timestamp: number } | null = null;
+  private CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
   private async getPRInfo(): Promise<GitHubPRInfo | null> {
     const token = process.env.GITHUB_TOKEN;
     if (!token) {
@@ -16,11 +22,13 @@ export class GithubProvider implements VcsProvider {
     }
 
     const eventPath = process.env.GITHUB_EVENT_PATH;
-    if (!eventPath) {
-      throw new Error('Missing GITHUB_EVENT_PATH');
+    // Validate eventPath is absolute for security
+    if (!eventPath || !path.isAbsolute(eventPath)) {
+      throw new Error('Invalid event path');
     }
 
-    const event = require(eventPath);
+    // Securely read and parse the event payload
+    const event = JSON.parse(fs.readFileSync(eventPath, 'utf8'));
     const pull_number = event.pull_request?.number;
     if (!pull_number) {
       throw new Error('Missing PR number in event payload');
@@ -38,6 +46,23 @@ export class GithubProvider implements VcsProvider {
     return new Octokit({ auth: token });
   }
 
+  // Helper to fetch and cache PR commits with expiration
+  private async getCommits(): Promise<any[]> {
+    if (
+      !this.cachedCommits ||
+      Date.now() - this.cachedCommits.timestamp > this.CACHE_TTL_MS
+    ) {
+      const prInfo = await this.getPRInfo();
+      if (!prInfo) throw new Error('Failed to get PR info');
+      const octokit = this.getOctokit();
+      const response = await octokit.pulls.listCommits({
+        ...prInfo,
+      });
+      this.cachedCommits = { data: response.data, timestamp: Date.now() };
+    }
+    return this.cachedCommits.data;
+  }
+
   async getCurrentBranchName(): Promise<string> {
     const headRef = process.env.GITHUB_HEAD_REF;
     if (headRef) {
@@ -51,7 +76,8 @@ export class GithubProvider implements VcsProvider {
       if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
         const eventPath = process.env.GITHUB_EVENT_PATH;
         if (eventPath) {
-          const event = require(eventPath);
+          // Securely read and parse the event payload
+          const event = JSON.parse(fs.readFileSync(eventPath, 'utf8'));
           const prTitle = event.pull_request?.title;
           const prBody = event.pull_request?.body;
           return prTitle || prBody || '';
@@ -73,17 +99,11 @@ export class GithubProvider implements VcsProvider {
 
   async getMergeRequestCommits(baseBranch = 'main'): Promise<string[]> {
     try {
-      const prInfo = await this.getPRInfo();
-      if (!prInfo) return [];
-
-      const octokit = this.getOctokit();
-      const { data: commits } = await octokit.pulls.listCommits({
-        ...prInfo,
-      });
+      const commits = await this.getCommits();
       return commits.map((commit) => commit.sha);
     } catch (error) {
       console.error(chalk.red('Error getting merge request commits:'), error);
-      return [];
+      throw new Error('Failed to fetch GitHub merge request commits');
     }
   }
 
@@ -91,14 +111,7 @@ export class GithubProvider implements VcsProvider {
     baseBranch = 'main',
   ): Promise<CommitReviewInfo[]> {
     try {
-      const prInfo = await this.getPRInfo();
-      if (!prInfo) return [];
-
-      const octokit = this.getOctokit();
-      const { data: commits } = await octokit.pulls.listCommits({
-        ...prInfo,
-      });
-
+      const commits = await this.getCommits();
       // For commit message review, we only need basic commit info without files
       return commits.map((commit) => ({
         hash: commit.sha,
@@ -121,7 +134,7 @@ export class GithubProvider implements VcsProvider {
   ): Promise<CommitReviewInfo[]> {
     try {
       const prInfo = await this.getPRInfo();
-      if (!prInfo) return [];
+      if (!prInfo) throw new Error('Failed to get PR info');
 
       const octokit = this.getOctokit();
 
