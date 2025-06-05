@@ -8,31 +8,7 @@ export class LocalGitProvider implements VcsProvider {
     return result.stdout.trim();
   }
 
-  async getCurrentCommitMessage(): Promise<string> {
-    const result = await execCommand('git log -1 --pretty=%B');
-    return result.stdout.trim();
-  }
-
-  async getMergeRequestCommits(baseBranch = 'main'): Promise<string[]> {
-    try {
-      const git: SimpleGit = simpleGit();
-      const currentBranch = await this.getCurrentBranchName();
-      const logResult = await git.log({
-        from: baseBranch,
-        to: currentBranch,
-        symmetric: false,
-      });
-      return logResult.all.map((commit) => commit.hash);
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Error getting merge request commits:', error);
-      return [];
-    }
-  }
-
-  async getPullRequestChanges(
-    baseBranch = 'main',
-  ): Promise<CommitReviewInfo[]> {
+  async getPullRequestFiles(baseBranch = 'main'): Promise<CommitReviewInfo[]> {
     try {
       const git: SimpleGit = simpleGit();
       const commits: CommitReviewInfo[] = [];
@@ -86,7 +62,7 @@ export class LocalGitProvider implements VcsProvider {
     }
   }
 
-  async getCommitMessagesForReview(
+  async getPullRequestCommits(
     baseBranch = 'main',
   ): Promise<CommitReviewInfo[]> {
     try {

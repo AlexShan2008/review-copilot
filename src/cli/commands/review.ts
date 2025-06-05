@@ -56,6 +56,83 @@ async function processReview(
   }
 }
 
+// 1. Common formatting function
+interface FormattedReview {
+  message: string;
+  success: boolean;
+  suggestions: { message: string; severity: string }[];
+  errors: { message: string }[];
+}
+
+function formatReviewResults(results: ReviewResult[]): FormattedReview[] {
+  return results.map((result) => ({
+    message: result.message,
+    success: result.success,
+    suggestions: result.suggestions || [],
+    errors: result.errors || [],
+  }));
+}
+
+// 2. Terminal output function
+function printReviewResultsToTerminal(
+  formattedResults: FormattedReview[],
+): void {
+  console.log('\n📝 Review Results:\n');
+  const allPassed = formattedResults.every((result) => result.success);
+  if (allPassed) {
+    console.log(chalk.green('🎉 All checks passed! Code looks great!\n'));
+  }
+  formattedResults.forEach((result) => {
+    // const icon = result.success ? '✅' : '❌';
+    console.log(`${chalk.bold(result.message)}`);
+    if (result.suggestions?.length) {
+      result.suggestions.forEach((suggestion) => {
+        const severity =
+          suggestion.severity === 'error'
+            ? chalk.red
+            : suggestion.severity === 'warning'
+              ? chalk.yellow
+              : chalk.gray;
+        console.log(severity('  └─ ') + suggestion.message);
+      });
+    }
+    if (result.errors?.length) {
+      result.errors.forEach((error) => {
+        console.log(chalk.red('  └─ ') + error.message);
+      });
+    }
+    console.log(''); // Empty line for readability
+  });
+}
+
+// 3. Markdown/PR comment output function
+function formatReviewResultsAsMarkdown(
+  formattedResults: FormattedReview[],
+): string {
+  let comment = '## 🤖 ReviewCopilot Report\n\n';
+  formattedResults.forEach((result) => {
+    comment += `### ${result.message}\n\n`;
+    if (result.suggestions?.length) {
+      result.suggestions.forEach((suggestion) => {
+        const severity =
+          suggestion.severity === 'error'
+            ? '❗'
+            : suggestion.severity === 'warning'
+              ? '⚠️'
+              : '💡';
+        comment += `- ${severity} ${suggestion.message}\n`;
+      });
+    }
+    if (result.errors?.length) {
+      result.errors.forEach((error) => {
+        comment += `- ❗ ${error.message}\n`;
+      });
+    }
+    comment += '\n';
+  });
+  return comment;
+}
+
 export async function reviewCommand(
   options: ReviewCommandOptions,
 ): Promise<boolean> {
@@ -71,10 +148,24 @@ export async function reviewCommand(
     const vcs = getVcsProvider();
     const results: ReviewResult[] = [];
 
+    // Review branch name if enabled (only once for the whole MR)
+    if (config.rules.branchName.enabled) {
+      const branchName = await vcs.getCurrentBranchName();
+      if (branchName) {
+        await processReview(
+          aiProvider,
+          config.rules.branchName.prompt,
+          branchName,
+          'Branch Name',
+          results,
+        );
+      }
+    }
+
     // Review commit messages if enabled
     if (config.rules.commitMessage.enabled) {
       spinner.text = 'Getting commit messages for review...';
-      const commits = await vcs.getCommitMessagesForReview(
+      const commits = await vcs.getPullRequestCommits(
         options.baseBranch || 'main',
       );
 
@@ -108,7 +199,7 @@ export async function reviewCommand(
     // Review code changes if enabled
     if (config.rules.codeChanges.enabled) {
       spinner.text = 'Getting PR changes for code review...';
-      const prChanges = await vcs.getPullRequestChanges(
+      const prChanges = await vcs.getPullRequestFiles(
         options.baseBranch || 'main',
       );
 
@@ -210,42 +301,29 @@ export async function reviewCommand(
       }
     }
 
-    // Review branch name if enabled (only once for the whole MR)
-    if (config.rules.branchName.enabled) {
-      const branchName = await vcs.getCurrentBranchName();
-      if (branchName) {
-        await processReview(
-          aiProvider,
-          config.rules.branchName.prompt,
-          branchName,
-          'Branch Name',
-          results,
-        );
-      }
-    }
-
     // Display results
     spinner.stop();
     if (results.length > 0) {
-      displayResults(results);
-
+      // Use the new formatting and output functions
+      const formatted = formatReviewResults(results);
       if (
         process.env.GITHUB_ACTIONS === 'true' ||
         process.env.GITLAB_CI === 'true'
       ) {
         const gitService = GitPlatformFactory.createService();
         const prDetails = await gitService.getPRDetails();
-
         if (prDetails) {
           spinner.text = 'Posting review comments...';
           await gitService.addPRComment(
             prDetails.owner,
             prDetails.repo,
             prDetails.prNumber,
-            formatReviewComment(results),
+            formatReviewResultsAsMarkdown(formatted),
           );
           spinner.succeed('Review comments posted');
         }
+      } else {
+        printReviewResultsToTerminal(formatted);
       }
     } else {
       spinner.succeed('No issues found');
@@ -287,70 +365,4 @@ export async function reviewCommand(
       spinner.stop();
     }
   }
-}
-
-function displayResults(results: ReviewResult[]): void {
-  console.log('\n📝 Review Results:\n');
-
-  const allPassed = results.every((result) => result.success);
-
-  if (allPassed) {
-    console.log(chalk.green('🎉 All checks passed! Code looks great!\n'));
-  }
-
-  results.forEach((result) => {
-    const icon = result.success ? '✅' : '❌';
-    console.log(`${icon} ${chalk.bold(result.message)}`);
-
-    if (result.suggestions?.length) {
-      result.suggestions.forEach((suggestion) => {
-        const severity =
-          suggestion.severity === 'error'
-            ? chalk.red
-            : suggestion.severity === 'warning'
-              ? chalk.yellow
-              : chalk.gray;
-        console.log(severity('  └─ ') + suggestion.message);
-      });
-    }
-
-    if (result.errors?.length) {
-      result.errors.forEach((error) => {
-        console.log(chalk.red('  └─ ') + error.message);
-      });
-    }
-
-    console.log(''); // Empty line for readability
-  });
-}
-
-function formatReviewComment(results: ReviewResult[]): string {
-  let comment = '## 🤖 ReviewCopilot Report\n\n';
-
-  results.forEach((result) => {
-    // const icon = result.success ? '✅' : '❌';
-    comment += `### ${result.message}\n\n`;
-
-    if (result.suggestions?.length) {
-      result.suggestions.forEach((suggestion) => {
-        const severity =
-          suggestion.severity === 'error'
-            ? '❗'
-            : suggestion.severity === 'warning'
-              ? '⚠️'
-              : '💡';
-        comment += `- ${severity} ${suggestion.message}\n`;
-      });
-    }
-
-    if (result.errors?.length) {
-      result.errors.forEach((error) => {
-        comment += `- ❗ ${error.message}\n`;
-      });
-    }
-
-    comment += '\n';
-  });
-
-  return comment;
 }

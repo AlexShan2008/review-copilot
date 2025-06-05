@@ -16,8 +16,6 @@ export interface CommitReviewInfo {
 
 export interface VcsProvider {
   getCurrentBranchName(): Promise<string>;
-  getCurrentCommitMessage(): Promise<string>;
-  getMergeRequestCommits(baseBranch?: string): Promise<string[]>;
-  getPullRequestChanges(baseBranch?: string): Promise<CommitReviewInfo[]>;
-  getCommitMessagesForReview(baseBranch?: string): Promise<CommitReviewInfo[]>;
+  getPullRequestFiles(baseBranch?: string): Promise<CommitReviewInfo[]>;
+  getPullRequestCommits(baseBranch?: string): Promise<CommitReviewInfo[]>;
 }
