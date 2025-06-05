@@ -8,7 +8,7 @@ export interface CommitReviewInfo {
   date: string;
   message: string;
   author: string;
-  files: {
+  files?: {
     file: string;
     changes: string;
   }[];
