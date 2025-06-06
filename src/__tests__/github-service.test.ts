@@ -52,7 +52,12 @@ describe('GitHubService', () => {
   });
 
   it('should add a PR comment', async () => {
-    await service.createIssueComment('owner', 'repo', 1, 'test comment');
+    await service.createIssueComment({
+      owner: 'owner',
+      repo: 'repo',
+      issue_number: 1,
+      body: 'test comment',
+    });
     expect(octokitMock.issues.createComment).toHaveBeenCalledWith({
       owner: 'owner',
       repo: 'repo',

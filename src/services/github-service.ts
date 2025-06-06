@@ -41,7 +41,6 @@ export class GitHubService implements IGitPlatformService {
     side,
     startLine,
     startSide,
-    inReplyTo,
   }: CreateReviewCommentParams): Promise<void> {
     await this.client.pulls.createReviewComment({
       owner,
@@ -55,7 +54,6 @@ export class GitHubService implements IGitPlatformService {
       side,
       start_line: startLine,
       start_side: startSide,
-      in_reply_to: inReplyTo,
     });
   }
 
