@@ -2,367 +2,443 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { ConfigManager } from '../../config/config-manager';
 import { ProviderFactory } from '../../providers/provider-factory';
-import { ReviewResult } from '../../types';
 import micromatch from 'micromatch';
 import { GitPlatformFactory } from '../../services/git-platform-factory';
 import { getVcsProvider } from '../../utils/vcs-factory';
+import EnvironmentHelpers from '../../utils/environment-helpers';
+import {
+  outputReviewResults,
+  ReviewCommandOptions,
+  ReviewContext,
+} from './helpers';
+import { CodeReviewResult } from '../../types';
 
-interface ReviewCommandOptions {
-  config: string;
-  baseBranch?: string;
-}
+export async function initializeReviewContext(
+  options: ReviewCommandOptions,
+  spinner: ora.Ora,
+): Promise<ReviewContext> {
+  spinner.text = 'Loading configuration...';
+  const configManager = ConfigManager.getInstance();
+  await configManager.loadConfig(options.config);
+  const config = configManager.getConfig();
 
-async function processReview(
-  aiProvider: any,
-  prompt: string,
-  content: string,
-  reviewType: string,
-  results: ReviewResult[],
-): Promise<void> {
-  try {
-    const result = await aiProvider.review(prompt, content);
-    // If we get a result, consider it a successful review
-    results.push({
-      success: result?.success ?? false,
-      message: `${reviewType} Review`,
-      suggestions: result
-        ? [
-            {
-              message:
-                typeof result === 'string'
-                  ? result
-                  : result?.message
-                    ? result.message
-                    : JSON.stringify(result),
-              severity: 'info',
-            },
-          ]
-        : [],
-      errors: [],
-    });
-  } catch (error) {
-    // If there's an error, add it to the results
-    results.push({
-      success: false,
-      message: `${reviewType} Review`,
-      suggestions: [],
-      errors: [
-        {
-          message:
-            error instanceof Error ? error.message : 'Unknown error occurred',
-        },
-      ],
-    });
+  spinner.text = 'Initializing AI provider...';
+  const aiProvider = ProviderFactory.createProvider(config);
+  const vcs = getVcsProvider();
+
+  let gitService;
+  let prDetails;
+
+  if (EnvironmentHelpers.isCI) {
+    spinner.text = 'Getting PR details...';
+    gitService = GitPlatformFactory.createService();
+    prDetails = await gitService.getPRDetails();
   }
-}
 
-// 1. Common formatting function
-interface FormattedReview {
-  message: string;
-  success: boolean;
-  suggestions: { message: string; severity: string }[];
-  errors: { message: string }[];
-}
-
-function formatReviewResults(results: ReviewResult[]): FormattedReview[] {
-  return results.map((result) => ({
-    message: result.message,
-    success: result.success,
-    suggestions: result.suggestions || [],
-    errors: result.errors || [],
-  }));
-}
-
-// 2. Terminal output function
-function printReviewResultsToTerminal(
-  formattedResults: FormattedReview[],
-): void {
-  console.log('\n📝 Review Results:\n');
-  const allPassed = formattedResults.every((result) => result.success);
-  if (allPassed) {
-    console.log(chalk.green('🎉 All checks passed! Code looks great!\n'));
-  }
-  formattedResults.forEach((result) => {
-    // const icon = result.success ? '✅' : '❌';
-    console.log(`${chalk.bold(result.message)}`);
-    if (result.suggestions?.length) {
-      result.suggestions.forEach((suggestion) => {
-        const severity =
-          suggestion.severity === 'error'
-            ? chalk.red
-            : suggestion.severity === 'warning'
-              ? chalk.yellow
-              : chalk.gray;
-        console.log(severity('  └─ ') + suggestion.message);
-      });
-    }
-    if (result.errors?.length) {
-      result.errors.forEach((error) => {
-        console.log(chalk.red('  └─ ') + error.message);
-      });
-    }
-    console.log(''); // Empty line for readability
-  });
-}
-
-// 3. Markdown/PR comment output function
-function formatReviewResultsAsMarkdown(
-  formattedResults: FormattedReview[],
-): string {
-  let comment = '## 🤖 ReviewCopilot Report\n\n';
-  formattedResults.forEach((result) => {
-    comment += `### ${result.message}\n\n`;
-    if (result.suggestions?.length) {
-      result.suggestions.forEach((suggestion) => {
-        const severity =
-          suggestion.severity === 'error'
-            ? '❗'
-            : suggestion.severity === 'warning'
-              ? '⚠️'
-              : '💡';
-        comment += `- ${severity} ${suggestion.message}\n`;
-      });
-    }
-    if (result.errors?.length) {
-      result.errors.forEach((error) => {
-        comment += `- ❗ ${error.message}\n`;
-      });
-    }
-    comment += '\n';
-  });
-  return comment;
+  return {
+    aiProvider,
+    config,
+    vcs,
+    gitService,
+    prDetails,
+    spinner,
+  };
 }
 
 export async function reviewCommand(
   options: ReviewCommandOptions,
 ): Promise<boolean> {
-  let spinner: ora.Ora | undefined;
+  const spinner = ora('Starting code review...').start();
+
   try {
-    spinner = ora('Starting code review...').start();
-    const configManager = ConfigManager.getInstance();
-    await configManager.loadConfig(options.config);
-    const config = configManager.getConfig();
+    const context = await initializeReviewContext(options, spinner);
 
-    spinner.text = 'Initializing AI provider...';
-    const aiProvider = ProviderFactory.createProvider(config);
-    const vcs = getVcsProvider();
-    const results: ReviewResult[] = [];
-
-    // Review branch name if enabled (only once for the whole MR)
-    if (config.rules.branchName.enabled) {
-      const branchName = await vcs.getCurrentBranchName();
-      if (branchName) {
-        await processReview(
-          aiProvider,
-          config.rules.branchName.prompt,
-          branchName,
-          'Branch Name',
-          results,
-        );
-      }
+    if (context.config.rules.branchName.enabled) {
+      const results = await reviewBranchName(context);
+      await outputReviewResults(context, {
+        branchName: [
+          {
+            success: results.success,
+            suggestions: results.suggestions,
+            error: results.error,
+          },
+        ],
+      });
     }
 
-    // Review commit messages if enabled
-    if (config.rules.commitMessage.enabled) {
-      spinner.text = 'Getting commit messages for review...';
-      const commits = await vcs.getPullRequestCommits(
-        options.baseBranch || 'main',
-      );
-
-      if (Array.isArray(commits) && commits.length > 0) {
-        console.log(
-          chalk.blue(`\nFound ${commits.length} commit messages to review`),
-        );
-
-        for (const commit of commits) {
-          console.log(
-            chalk.green('\n----------------------------------------'),
-          );
-          console.log(chalk.yellow('Reviewing commit:', commit.hash));
-          console.log(chalk.cyan('Author:', commit.author));
-          console.log(chalk.cyan('Date:', commit.date));
-          console.log(chalk.white('\nMessage:'), commit.message);
-
-          await processReview(
-            aiProvider,
-            config.rules.commitMessage.prompt,
-            commit.message,
-            `Commit Message Review (${commit.hash.slice(0, 7)})`,
-            results,
-          );
-        }
-      } else {
-        spinner.info('No commit messages to review.');
-      }
+    if (context.config.rules.commitMessage.enabled) {
+      const results = await reviewCommitMessages(context, options.baseBranch);
+      await outputReviewResults(context, {
+        commitMessages: [
+          {
+            success: results.success,
+            suggestions: results.suggestions,
+            error: results.error,
+          },
+        ],
+      });
     }
 
-    // Review code changes if enabled
-    if (config.rules.codeChanges.enabled) {
-      spinner.text = 'Getting PR changes for code review...';
-      const prChanges = await vcs.getPullRequestFiles(
-        options.baseBranch || 'main',
-      );
-
-      if (Array.isArray(prChanges) && prChanges.length > 0) {
-        const commit = prChanges[0]; // We only need the final state for code review
-        console.log(chalk.green('\n----------------------------------------'));
-        console.log(chalk.blue('\nReviewing PR changes:'));
-        console.log(chalk.yellow('Head commit:', commit.hash));
-        console.log(chalk.cyan('Author:', commit.author));
-        console.log(chalk.cyan('Last updated:', commit.date));
-
-        const patterns = config.rules.codeChanges.filePatterns ?? [
-          '**/*.{ts,tsx,js,jsx}',
-        ];
-
-        const files = Array.isArray(commit.files) ? commit.files : [];
-        // Normalize files to always have a string 'changes' property
-        const normalizedFiles = files.map((f) => ({
-          ...f,
-          changes: typeof f.changes === 'string' ? f.changes : '',
-        }));
-        const filteredFiles = normalizedFiles.filter((change) => {
-          const isIgnored = patterns
-            .filter((pattern) => pattern.startsWith('!'))
-            .some((pattern) => {
-              const cleanPattern = pattern.slice(1);
-              return micromatch.isMatch(change.file, cleanPattern, {
-                dot: true,
-              });
-            });
-
-          if (isIgnored) {
-            console.log(chalk.yellow(`Ignoring file: ${change.file}`));
-            return false;
-          }
-
-          const isIncluded = patterns
-            .filter((pattern) => !pattern.startsWith('!'))
-            .some((pattern) =>
-              micromatch.isMatch(change.file, pattern, { dot: true }),
-            );
-
-          if (!isIncluded) {
-            console.log(
-              chalk.yellow(
-                `File not matching include patterns: ${change.file}`,
-              ),
-            );
-          }
-
-          return isIncluded;
-        });
-
-        console.log(chalk.blue('\nFiles to review:'));
-        filteredFiles.forEach((change) => {
-          if (typeof change.changes !== 'string') {
-            console.error('DEBUG: change.changes is not a string', change);
-          }
-          const changeLength =
-            typeof change.changes === 'string' ? change.changes.length : 0;
-          console.log(chalk.gray(`- ${change.file} (${changeLength} bytes)`));
-        });
-
-        if (filteredFiles.length > 0) {
-          const MAX_FILE_SIZE = 50000;
-          const truncatedFiles = filteredFiles.map((change) => ({
-            ...change,
-            changes:
-              typeof change.changes === 'string' &&
-              change.changes.length > MAX_FILE_SIZE
-                ? change.changes.slice(0, MAX_FILE_SIZE) +
-                  '\n... (content truncated for size limit)'
-                : typeof change.changes === 'string'
-                  ? change.changes
-                  : '',
-          }));
-
-          const combinedContent = truncatedFiles
-            .map((change) => `File: ${change.file}\n${change.changes}\n`)
-            .join('\n---\n\n');
-
-          const MAX_TOTAL_SIZE = 100000;
-          const finalContent =
-            combinedContent.length > MAX_TOTAL_SIZE
-              ? combinedContent.slice(0, MAX_TOTAL_SIZE) +
-                '\n... (content truncated for total size limit)'
-              : combinedContent;
-
-          await processReview(
-            aiProvider,
-            config.rules.codeChanges.prompt,
-            finalContent,
-            'Code Review',
-            results,
-          );
-        }
-      } else {
-        spinner.info('No code changes to review.');
-      }
+    if (context.config.rules.codeChanges.enabled) {
+      const results = await reviewCodeChanges(context, options.baseBranch);
+      await outputReviewResults(context, {
+        codeChanges: [
+          {
+            success: results.success,
+            suggestions: results.suggestions,
+            error: results.error,
+          },
+        ],
+      });
     }
 
-    // Display results
-    spinner.stop();
-    if (results.length > 0) {
-      // Use the new formatting and output functions
-      const formatted = formatReviewResults(results);
-      if (
-        process.env.GITHUB_ACTIONS === 'true' ||
-        process.env.GITLAB_CI === 'true'
-      ) {
-        const gitService = GitPlatformFactory.createService();
-        const prDetails = await gitService.getPRDetails();
-        if (prDetails) {
-          spinner.text = 'Posting review comments...';
-          await gitService.addPRComment(
-            prDetails.owner,
-            prDetails.repo,
-            prDetails.prNumber,
-            formatReviewResultsAsMarkdown(formatted),
-          );
-          spinner.succeed('Review comments posted');
-        }
-      } else {
-        printReviewResultsToTerminal(formatted);
-      }
-    } else {
-      spinner.succeed('No issues found');
-    }
-
+    spinner.succeed('Code review completed successfully');
     return true;
   } catch (error) {
-    if (spinner) {
-      spinner.fail('Review failed');
+    await handleReviewError(spinner, error);
+    return false;
+  } finally {
+    spinner.stop();
+  }
+}
+
+export async function reviewBranchName(
+  context: ReviewContext,
+): Promise<CodeReviewResult> {
+  context.spinner.text = 'Reviewing branch name...';
+
+  try {
+    const branchName = await context.vcs.getCurrentBranchName();
+    if (!branchName) {
+      return {
+        success: false,
+        suggestions: [],
+        error: {
+          message: 'Could not get current branch name',
+        },
+      };
     }
 
-    if (error instanceof Error) {
-      console.error(chalk.red('\nError details:'));
-      console.error(chalk.yellow('Message:'), error.message);
+    console.log(chalk.blue(`\nReviewing branch: ${chalk.yellow(branchName)}`));
 
-      const message = typeof error.message === 'string' ? error.message : '';
-      const errorDetails = message.split('Details: ')[1];
-      if (typeof errorDetails === 'string' && errorDetails.length > 0) {
+    const result = await context.aiProvider.review(
+      context.config.rules.branchName.prompt,
+      branchName,
+    );
+
+    return {
+      success: Boolean(result),
+      suggestions: [
+        {
+          message: result,
+        },
+      ],
+      error: undefined,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      suggestions: [],
+      error: {
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Unknown error in branch name review',
+      },
+    };
+  }
+}
+
+export async function reviewCommitMessages(
+  context: ReviewContext,
+  baseBranch?: string,
+): Promise<CodeReviewResult> {
+  context.spinner.text = 'Getting commit messages...';
+
+  try {
+    const commits = await context.vcs.getPullRequestCommits(
+      baseBranch || 'main',
+    );
+
+    if (!Array.isArray(commits) || commits.length === 0) {
+      console.log(chalk.gray('\nNo commit messages to review.'));
+      return {
+        success: true,
+        suggestions: [],
+        error: undefined,
+      };
+    }
+
+    console.log(
+      chalk.blue(`\nFound ${commits.length} commit message(s) to review:`),
+    );
+
+    const results: CodeReviewResult[] = [];
+
+    for (const [index, commit] of commits.entries()) {
+      context.spinner.text = `Reviewing commit ${index + 1}/${commits.length}...`;
+
+      console.log(chalk.green('\n' + '─'.repeat(50)));
+      console.log(
+        chalk.yellow(`📝 Commit ${index + 1}: ${commit.hash.slice(0, 7)}`),
+      );
+      console.log(chalk.cyan(`👤 Author: ${commit.author}`));
+      console.log(chalk.cyan(`📅 Date: ${commit.date}`));
+      console.log(chalk.white(`💬 Message: ${commit.message}`));
+
+      try {
+        const result = await context.aiProvider.review(
+          context.config.rules.commitMessage.prompt,
+          commit.message,
+        );
+
+        results.push({
+          success: Boolean(result),
+          suggestions: [
+            {
+              message:
+                typeof result === 'string'
+                  ? result
+                  : result?.message || JSON.stringify(result),
+            },
+          ],
+          error: undefined,
+        });
+      } catch (error) {
+        results.push({
+          success: false,
+          suggestions: [],
+          error: {
+            message: `Commit ${commit.hash.slice(0, 7)} - ${commit.author}`,
+          },
+        });
+      }
+    }
+
+    return {
+      success: true,
+      suggestions: results.flatMap((result) => result.suggestions),
+      error: undefined,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      suggestions: [],
+      error: {
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Failed to get commit messages',
+      },
+    };
+  }
+}
+
+export async function reviewCodeChanges(
+  context: ReviewContext,
+  baseBranch?: string,
+): Promise<CodeReviewResult> {
+  context.spinner.text = 'Getting code changes...';
+
+  try {
+    const prChanges = await context.vcs.getPullRequestFiles(
+      baseBranch || 'main',
+    );
+
+    if (!Array.isArray(prChanges) || prChanges.length === 0) {
+      console.log(chalk.gray('\nNo code changes to review.'));
+      return {
+        success: true,
+        suggestions: [
+          {
+            message: 'No code changes found',
+            file: '',
+            line: 0,
+            severity: 'info',
+          },
+        ],
+        error: undefined,
+      };
+    }
+
+    const commit = prChanges[0];
+    console.log(chalk.green('\n' + '='.repeat(60)));
+    console.log(chalk.blue('📁 Reviewing PR Code Changes:'));
+    console.log(chalk.yellow(`📋 PR Title: ${commit.message}`));
+    console.log(chalk.yellow(`🔍 Head Commit: ${commit.hash}`));
+    console.log(chalk.cyan(`👤 Author: ${commit.author}`));
+    console.log(chalk.cyan(`📅 Last Updated: ${commit.date}`));
+
+    const { filteredFiles, skippedFiles } = await filterAndProcessFiles(
+      context,
+      commit.files || [],
+    );
+
+    if (filteredFiles.length === 0) {
+      return {
+        success: true,
+        suggestions: [
+          {
+            message: `No files matched the review patterns. ${skippedFiles} file(s) skipped.`,
+            file: '',
+            line: 0,
+            severity: 'info',
+          },
+        ],
+        error: undefined,
+      };
+    }
+
+    context.spinner.text = 'Analyzing code changes...';
+    const reviewContent = prepareCodeReviewContent(filteredFiles);
+
+    try {
+      const aiResult = await context.aiProvider.review(
+        context.config.rules.codeChanges.prompt,
+        reviewContent,
+      );
+
+      return {
+        success: true,
+        suggestions: [
+          {
+            message: aiResult.suggestions,
+          },
+        ],
+        error: undefined,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        suggestions: [],
+        error: {
+          message:
+            error instanceof Error
+              ? error.message
+              : 'Unknown error in code changes review',
+        },
+      };
+    }
+  } catch (error) {
+    return {
+      success: false,
+      suggestions: [],
+      error: {
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Unknown error in code changes review',
+      },
+    };
+  }
+}
+
+export async function filterAndProcessFiles(
+  context: ReviewContext,
+  files: any[],
+) {
+  const patterns = context.config.rules.codeChanges.filePatterns ?? [
+    '**/*.{ts,tsx,js,jsx}',
+  ];
+
+  const normalizedFiles = files.map((f) => ({
+    ...f,
+    changes: typeof f.changes === 'string' ? f.changes : '',
+  }));
+
+  const filteredFiles = normalizedFiles.filter((change) => {
+    const isIgnored = patterns
+      .filter((pattern: string) => pattern.startsWith('!'))
+      .some((pattern: string) => {
+        const cleanPattern = pattern.slice(1);
+        return micromatch.isMatch(change.file, cleanPattern, { dot: true });
+      });
+
+    if (isIgnored) {
+      console.log(chalk.gray(`⏭️  Ignored: ${change.file}`));
+      return false;
+    }
+
+    const isIncluded = patterns
+      .filter((pattern: string) => !pattern.startsWith('!'))
+      .some((pattern: string) =>
+        micromatch.isMatch(change.file, pattern, { dot: true }),
+      );
+
+    if (!isIncluded) {
+      console.log(
+        chalk.gray(`⏭️  Skipped: ${change.file} (not matching patterns)`),
+      );
+    } else {
+      const changeLength = change.changes.length;
+      console.log(
+        chalk.green(`✅ Included: ${change.file} (${changeLength} bytes)`),
+      );
+    }
+
+    return isIncluded;
+  });
+
+  return {
+    filteredFiles,
+    skippedFiles: normalizedFiles.length - filteredFiles.length,
+  };
+}
+
+export function prepareCodeReviewContent(files: any[]): string {
+  const MAX_FILE_SIZE = 50000;
+  const MAX_TOTAL_SIZE = 100000;
+
+  const truncatedFiles = files.map((change) => ({
+    ...change,
+    changes:
+      change.changes.length > MAX_FILE_SIZE
+        ? change.changes.slice(0, MAX_FILE_SIZE) +
+          '\n... (content truncated for size limit)'
+        : change.changes,
+  }));
+
+  const combinedContent = truncatedFiles
+    .map((change) => `File: ${change.file}\n${change.changes}\n`)
+    .join('\n---\n\n');
+
+  return combinedContent.length > MAX_TOTAL_SIZE
+    ? combinedContent.slice(0, MAX_TOTAL_SIZE) +
+        '\n... (content truncated for total size limit)'
+    : combinedContent;
+}
+
+export async function handleReviewError(
+  spinner: ora.Ora,
+  error: unknown,
+): Promise<void> {
+  spinner.fail('Review failed');
+
+  if (error instanceof Error) {
+    console.error(chalk.red('\n❌ Error Details:'));
+    console.error(chalk.yellow('Message:'), error.message);
+
+    const message = error.message;
+    const errorDetails = message.split('Details: ')[1];
+    if (errorDetails) {
+      try {
         const errorObj = JSON.parse(errorDetails);
         if (errorObj.error) {
-          console.error(chalk.yellow('\nOpenAI Error:'));
+          console.error(chalk.yellow('\n🤖 AI Provider Error:'));
           console.error(chalk.gray('Type:'), errorObj.error.type);
           console.error(chalk.gray('Code:'), errorObj.error.code);
           console.error(chalk.gray('Message:'), errorObj.error.message);
         }
+      } catch {
+        console.error(chalk.gray('Raw error details:'), errorDetails);
       }
-
-      if (error.stack) {
-        console.error(chalk.gray('\nStack trace:'));
-        console.error(chalk.gray(error.stack));
-      }
-    } else {
-      console.error(chalk.red('\nUnknown error:'), error);
     }
 
-    return false;
-  } finally {
-    if (spinner) {
-      spinner.stop();
+    if (error.stack) {
+      console.error(chalk.gray('\n📋 Stack Trace:'));
+      console.error(chalk.gray(error.stack));
     }
+  } else {
+    console.error(chalk.red('\n❌ Unknown Error:'), error);
   }
 }

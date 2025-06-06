@@ -1,6 +1,7 @@
 import {
   IGitPlatformService,
   GitPlatformDetails,
+  CreateReviewCommentParams,
 } from './git-platform.interface';
 import { execSync } from 'child_process';
 import fs from 'fs';
@@ -43,7 +44,7 @@ export class LocalGitService implements IGitPlatformService {
     }
   }
 
-  async addPRComment(
+  async createIssueComment(
     owner: string,
     repo: string,
     prNumber: number,
@@ -52,6 +53,13 @@ export class LocalGitService implements IGitPlatformService {
     // In local development, just log the comment
     console.log('\n=== Review Comment ===');
     console.log(comment);
+    console.log('=====================\n');
+  }
+
+  async createReviewComment(params: CreateReviewCommentParams): Promise<void> {
+    // In local development, just log the comment
+    console.log('\n=== Review Comment ===');
+    console.log(params.body);
     console.log('=====================\n');
   }
 

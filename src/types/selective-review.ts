@@ -22,23 +22,6 @@ export interface SelectiveReviewContext {
   threadId?: string;
 }
 
-export interface SelectiveReviewResult {
-  // Whether the review was successful
-  success: boolean;
-  // The review message
-  message: string;
-  // The specific suggestions for the selected code
-  suggestions: string[];
-  // Any errors that occurred during review
-  errors: string[];
-  // The context of the review (which lines were reviewed)
-  context: {
-    filePath: string;
-    startLine: number;
-    endLine: number;
-  };
-}
-
 export interface ReviewTrigger {
   type: 'full' | 'selective';
   context?: SelectiveReviewContext;
