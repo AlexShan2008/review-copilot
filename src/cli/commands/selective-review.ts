@@ -96,9 +96,7 @@ export async function selectiveReviewCommand(
     } else {
       if (spinner) spinner.fail('Selective review failed');
       console.error(chalk.red('\nError details:'));
-      result.errors.forEach((error) => {
-        console.error(chalk.yellow('Error:'), error);
-      });
+      console.error(chalk.yellow('Error:'), result.error);
     }
 
     return result.success;

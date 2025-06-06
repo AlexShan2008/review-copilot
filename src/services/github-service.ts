@@ -1,8 +1,10 @@
 import { Octokit } from '@octokit/rest';
 import fs from 'fs';
 import {
+  CreateReviewCommentParams,
   IGitPlatformService,
   GitPlatformDetails,
+  createIssueComment,
 } from './git-platform.interface';
 import { execSync } from 'child_process';
 
@@ -13,17 +15,47 @@ export class GitHubService implements IGitPlatformService {
     this.client = new Octokit({ auth: token });
   }
 
-  async addPRComment(
-    owner: string,
-    repo: string,
-    prNumber: number,
-    comment: string,
-  ): Promise<void> {
+  async createIssueComment({
+    owner,
+    repo,
+    issue_number,
+    body,
+  }: createIssueComment): Promise<void> {
     await this.client.issues.createComment({
       owner,
       repo,
-      issue_number: prNumber,
-      body: comment,
+      issue_number,
+      body,
+    });
+  }
+
+  async createReviewComment({
+    owner,
+    repo,
+    prNumber,
+    body,
+    commitId,
+    path,
+    position,
+    line,
+    side,
+    startLine,
+    startSide,
+    inReplyTo,
+  }: CreateReviewCommentParams): Promise<void> {
+    await this.client.pulls.createReviewComment({
+      owner,
+      repo,
+      pull_number: prNumber,
+      body,
+      commit_id: commitId,
+      path,
+      position,
+      line,
+      side,
+      start_line: startLine,
+      start_side: startSide,
+      in_reply_to: inReplyTo,
     });
   }
 

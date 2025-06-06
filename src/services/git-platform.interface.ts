@@ -5,14 +5,31 @@ export interface GitPlatformDetails {
   platform: 'github' | 'gitlab';
 }
 
+export interface CreateReviewCommentParams {
+  owner: string;
+  repo: string;
+  prNumber: number;
+  body: string;
+  commitId: string;
+  path: string;
+  position?: number;
+  line?: number;
+  side?: 'LEFT' | 'RIGHT';
+  startLine?: number;
+  startSide?: 'LEFT' | 'RIGHT';
+  inReplyTo?: number;
+}
+
+export interface createIssueComment {
+  owner: string;
+  repo: string;
+  issue_number: number;
+  body: string;
+}
+
 export interface IGitPlatformService {
   getPRDetails(): Promise<GitPlatformDetails | null>;
-  addPRComment(
-    owner: string,
-    repo: string,
-    prNumber: number,
-    comment: string,
-  ): Promise<void>;
+  createIssueComment(params: createIssueComment): Promise<void>;
   replyToComment(
     owner: string,
     repo: string,
@@ -20,6 +37,7 @@ export interface IGitPlatformService {
     commentId: number,
     comment: string,
   ): Promise<void>;
+  createReviewComment(params: CreateReviewCommentParams): Promise<void>;
   replyToReviewComment(
     owner: string,
     repo: string,

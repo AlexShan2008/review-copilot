@@ -2,6 +2,7 @@ import { Gitlab } from '@gitbeaker/rest';
 import {
   IGitPlatformService,
   GitPlatformDetails,
+  CreateReviewCommentParams,
 } from './git-platform.interface';
 
 export class GitLabService implements IGitPlatformService {
@@ -25,7 +26,7 @@ export class GitLabService implements IGitPlatformService {
     };
   }
 
-  async addPRComment(
+  async createIssueComment(
     owner: string,
     repo: string,
     prNumber: number,
@@ -35,6 +36,14 @@ export class GitLabService implements IGitPlatformService {
       `${owner}/${repo}`,
       prNumber,
       comment,
+    );
+  }
+
+  async createReviewComment(params: CreateReviewCommentParams): Promise<void> {
+    await this.client.MergeRequestNotes.create(
+      `${params.owner}/${params.repo}`,
+      params.prNumber,
+      params.body,
     );
   }
 

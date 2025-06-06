@@ -58,21 +58,21 @@ export interface Config {
   }>;
 }
 
-// Review related types
-export interface ReviewResult {
-  success: boolean;
+export interface CodeReviewSuggestion {
   message: string;
-  suggestions: Array<{
+  file?: string;
+  line?: number;
+  severity?: 'info' | 'warning' | 'error';
+  side?: 'LEFT' | 'RIGHT';
+  startLine?: number;
+}
+
+export interface CodeReviewResult {
+  success: boolean;
+  suggestions: CodeReviewSuggestion[];
+  error?: {
     message: string;
-    severity: 'info' | 'warning' | 'error';
-    file?: string;
-    line?: number;
-  }>;
-  errors: Array<{
-    message: string;
-    file?: string;
-    line?: number;
-  }>;
+  };
 }
 
 export interface IAIProvider {
