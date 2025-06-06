@@ -47,6 +47,7 @@ export class SelectiveReviewService {
               file: context.filePath,
               line: context.startLine,
               severity: 'info',
+              reviewType: 'line-specific',
             },
           ]
         : [];
@@ -149,12 +150,12 @@ ${context.fullFileContent
           'No comment ID or thread ID provided, creating new comment...',
         );
         // Fallback to creating a new comment
-        await gitService.createIssueComment(
-          context.owner,
-          context.repo,
-          context.prNumber,
-          comment,
-        );
+        await gitService.createIssueComment({
+          owner: context.owner,
+          repo: context.repo,
+          issue_number: context.prNumber,
+          body: comment,
+        });
         console.log('Successfully created new comment');
       }
     } catch (error) {
@@ -179,15 +180,8 @@ ${context.fullFileContent
     result: CodeReviewResult,
   ): string {
     let comment = ``;
-    // Show single line number when startLine equals endLine
-    const lineRange =
-      context.startLine === context.endLine
-        ? `line ${context.startLine}`
-        : `lines ${context.startLine}-${context.endLine}`;
-    comment += `Reviewing ${context.filePath} (${lineRange})\n\n`;
 
     if (result.suggestions?.length) {
-      comment += `### Suggestions\n\n`;
       result.suggestions.forEach((suggestion) => {
         comment += `- ${suggestion.message}\n`;
       });

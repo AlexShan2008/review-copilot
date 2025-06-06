@@ -3,6 +3,7 @@ import {
   IGitPlatformService,
   GitPlatformDetails,
   CreateReviewCommentParams,
+  createIssueComment,
 } from './git-platform.interface';
 
 export class GitLabService implements IGitPlatformService {
@@ -26,16 +27,16 @@ export class GitLabService implements IGitPlatformService {
     };
   }
 
-  async createIssueComment(
-    owner: string,
-    repo: string,
-    prNumber: number,
-    comment: string,
-  ): Promise<void> {
+  async createIssueComment({
+    owner,
+    repo,
+    issue_number,
+    body,
+  }: createIssueComment): Promise<void> {
     await this.client.MergeRequestNotes.create(
       `${owner}/${repo}`,
-      prNumber,
-      comment,
+      issue_number,
+      body,
     );
   }
 

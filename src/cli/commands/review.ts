@@ -12,6 +12,7 @@ import {
   ReviewContext,
 } from './helpers';
 import { CodeReviewResult } from '../../types';
+import { LineSpecificReviewService } from '../../services/line-specific-review.service';
 
 export async function initializeReviewContext(
   options: ReviewCommandOptions,
@@ -81,6 +82,7 @@ export async function reviewCommand(
 
     if (context.config.rules.codeChanges.enabled) {
       const results = await reviewCodeChanges(context, options.baseBranch);
+      console.log('results========reviewCodeChanges', results);
       await outputReviewResults(context, {
         codeChanges: [
           {
@@ -131,6 +133,7 @@ export async function reviewBranchName(
       suggestions: [
         {
           message: result,
+          reviewType: 'general',
         },
       ],
       error: undefined,
@@ -200,6 +203,7 @@ export async function reviewCommitMessages(
                 typeof result === 'string'
                   ? result
                   : result?.message || JSON.stringify(result),
+              reviewType: 'general',
             },
           ],
           error: undefined,
@@ -255,6 +259,7 @@ export async function reviewCodeChanges(
             file: '',
             line: 0,
             severity: 'info',
+            reviewType: 'general',
           },
         ],
         error: undefined,
@@ -283,6 +288,7 @@ export async function reviewCodeChanges(
             file: '',
             line: 0,
             severity: 'info',
+            reviewType: 'general',
           },
         ],
         error: undefined,
@@ -290,6 +296,64 @@ export async function reviewCodeChanges(
     }
 
     context.spinner.text = 'Analyzing code changes...';
+
+    console.log('filteredFiles========', filteredFiles);
+    console.log('context.prDetails========', context.prDetails);
+    console.log('context.gitService========', context.gitService);
+
+    // Enhanced: Use line-specific review service if we have PR details and git service
+    if (context.prDetails && context.gitService) {
+      try {
+        console.log(chalk.blue('\n🔍 Performing line-specific code review...'));
+
+        const lineSpecificService = new LineSpecificReviewService(
+          context.aiProvider,
+          context.gitService,
+        );
+
+        const reviewResult =
+          await lineSpecificService.performLineSpecificReview(
+            filteredFiles,
+            commit.hash,
+            context.prDetails.owner,
+            context.prDetails.repo,
+            context.prDetails.prNumber,
+            context.config.rules.codeChanges.prompt,
+          );
+
+        console.log(
+          chalk.green(
+            `✅ Posted ${reviewResult.commentsPosted} line-specific comments`,
+          ),
+        );
+        console.log(
+          chalk.blue(
+            `📋 Found ${reviewResult.generalSuggestions.length} general suggestions`,
+          ),
+        );
+
+        // Return combined results
+        return {
+          success: true,
+          suggestions: [
+            ...reviewResult.generalSuggestions,
+            ...reviewResult.lineSpecificSuggestions,
+          ],
+          error: undefined,
+        };
+      } catch (error) {
+        console.warn(
+          chalk.yellow(
+            '⚠️  Line-specific review failed, falling back to general review',
+          ),
+        );
+        console.error(
+          chalk.gray(error instanceof Error ? error.message : 'Unknown error'),
+        );
+      }
+    }
+
+    // Fallback: Use traditional general review
     const reviewContent = prepareCodeReviewContent(filteredFiles);
 
     try {
@@ -303,6 +367,7 @@ export async function reviewCodeChanges(
         suggestions: [
           {
             message: aiResult.suggestions,
+            reviewType: 'general',
           },
         ],
         error: undefined,
