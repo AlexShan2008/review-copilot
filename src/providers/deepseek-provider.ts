@@ -1,4 +1,4 @@
-import { AIProviderConfig } from '../types';
+import { AIProviderConfig } from '../types/review.types';
 import { BaseProvider } from './base-provider';
 import chalk from 'chalk';
 import { SYSTEM_MESSAGES } from '../constants/ai-messages';

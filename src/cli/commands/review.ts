@@ -2,339 +2,433 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { ConfigManager } from '../../config/config-manager';
 import { ProviderFactory } from '../../providers/provider-factory';
-import { ReviewResult } from '../../types';
 import micromatch from 'micromatch';
 import { GitPlatformFactory } from '../../services/git-platform-factory';
 import { getVcsProvider } from '../../utils/vcs-factory';
+import EnvironmentHelpers from '../../utils/environment-helpers';
+import {
+  outputReviewResults,
+  ReviewCommandOptions,
+  ReviewContext,
+} from './helpers';
+import {
+  CodeReviewResult,
+  CodeReviewSuggestion,
+} from '../../providers/provider.types';
+import { ReviewConfig, AIProviderType } from '../../types/review.types';
+import { LineSpecificReviewService } from '../../services/line-specific-review.service';
+import { PullRequestFile } from '../../utils/git-service.interface';
+import { Logger } from '../../utils/logger';
 
-interface ReviewCommandOptions {
-  config: string;
-  baseBranch?: string;
-}
-
-async function processReview(
-  aiProvider: any,
-  prompt: string,
-  content: string,
-  reviewType: string,
-  results: ReviewResult[],
-): Promise<void> {
-  try {
-    const result = await aiProvider.review(prompt, content);
-    // If we get a result, consider it a successful review
-    results.push({
-      success: result?.success ?? false,
-      message: `${reviewType} Review`,
-      suggestions: result
-        ? [
-            {
-              message:
-                typeof result === 'string'
-                  ? result
-                  : result?.message
-                    ? result.message
-                    : JSON.stringify(result),
-              severity: 'info',
-            },
-          ]
-        : [],
-      errors: [],
-    });
-  } catch (error) {
-    // If there's an error, add it to the results
-    results.push({
-      success: false,
-      message: `${reviewType} Review`,
-      suggestions: [],
-      errors: [
-        {
-          message:
-            error instanceof Error ? error.message : 'Unknown error occurred',
-        },
-      ],
-    });
+export async function initializeReviewContext(
+  options: ReviewCommandOptions,
+  spinner: ora.Ora,
+): Promise<ReviewContext> {
+  spinner.text = 'Loading configuration...';
+  const configManager = await ConfigManager.getInstance(options.config);
+  const factoryConfig = configManager.getConfig();
+  const enabledProvider = Object.entries(factoryConfig.providers).find(
+    ([_, p]) => p.enabled,
+  )?.[1];
+  if (!enabledProvider) {
+    throw new Error('No enabled provider found in configuration');
   }
+
+  const config: ReviewConfig = {
+    ai: {
+      provider: (Object.entries(factoryConfig.providers).find(
+        ([_, p]) => p?.enabled,
+      )?.[0] || 'openai') as AIProviderType,
+      apiKey: enabledProvider.apiKey,
+      model: enabledProvider.model,
+      baseURL: enabledProvider.baseURL,
+    },
+    triggers: factoryConfig.triggers,
+    rules: factoryConfig.rules,
+    customReviewPoints: factoryConfig.customReviewPoints,
+  };
+
+  spinner.text = 'Initializing AI provider...';
+  const aiProvider = ProviderFactory.createProvider(factoryConfig);
+  const vcs = getVcsProvider();
+
+  let gitService;
+  let prDetails;
+
+  if (EnvironmentHelpers.isCI) {
+    spinner.text = 'Getting PR details...';
+    gitService = GitPlatformFactory.createService();
+    prDetails = await gitService.getPRDetails();
+  }
+
+  return {
+    aiProvider,
+    config,
+    vcs,
+    gitService,
+    prDetails,
+    spinner,
+  };
 }
 
 export async function reviewCommand(
   options: ReviewCommandOptions,
 ): Promise<boolean> {
-  let spinner: ora.Ora | undefined;
+  const spinner = ora('Starting code review...').start();
+
   try {
-    spinner = ora('Starting code review...').start();
-    const configManager = ConfigManager.getInstance();
-    await configManager.loadConfig(options.config);
-    const config = configManager.getConfig();
+    const context = await initializeReviewContext(options, spinner);
 
-    spinner.text = 'Initializing AI provider...';
-    const aiProvider = ProviderFactory.createProvider(config);
-
-    spinner.text = 'Getting all commits in MR...';
-    const vcs = getVcsProvider();
-    const commits = await vcs.getPullRequestChanges(
-      options.baseBranch || 'main',
-    );
-
-    if (!Array.isArray(commits) || commits.length === 0) {
-      spinner.info('No commits to review.');
-      spinner.succeed('Review completed');
-      return true;
+    if (context.config.rules.branchName.enabled) {
+      const results = await reviewBranchName(context);
+      await outputReviewResults(context, {
+        branchName: [
+          {
+            success: results.success,
+            suggestions: results.suggestions,
+            error: results.error,
+          },
+        ],
+      });
     }
 
-    console.log(chalk.blue(`\nFound ${commits.length} commits to review`));
-
-    spinner.text = 'Analyzing commits...';
-    const results: ReviewResult[] = [];
-
-    for (const commit of commits) {
-      console.log(chalk.green('\n----------------------------------------'));
-      console.log(chalk.yellow('Reviewing commit:', commit.hash));
-      console.log(chalk.cyan('Author:', commit.author));
-      console.log(chalk.cyan('Date:', commit.date));
-      console.log(chalk.white('\nMessage:'), commit.message);
-
-      // Review code changes if enabled
-      if (config.rules.codeChanges.enabled) {
-        const patterns = config.rules.codeChanges.filePatterns ?? [
-          '**/*.{ts,tsx,js,jsx}',
-        ];
-
-        const files = Array.isArray(commit.files) ? commit.files : [];
-        // Normalize files to always have a string 'changes' property
-        const normalizedFiles = files.map((f) => ({
-          ...f,
-          changes: typeof f.changes === 'string' ? f.changes : '',
-        }));
-        const filteredFiles = normalizedFiles.filter((change) => {
-          const isIgnored = patterns
-            .filter((pattern) => pattern.startsWith('!'))
-            .some((pattern) => {
-              const cleanPattern = pattern.slice(1);
-              return micromatch.isMatch(change.file, cleanPattern, {
-                dot: true,
-              });
-            });
-
-          if (isIgnored) {
-            console.log(chalk.yellow(`Ignoring file: ${change.file}`));
-            return false;
-          }
-
-          const isIncluded = patterns
-            .filter((pattern) => !pattern.startsWith('!'))
-            .some((pattern) =>
-              micromatch.isMatch(change.file, pattern, { dot: true }),
-            );
-
-          if (!isIncluded) {
-            console.log(
-              chalk.yellow(
-                `File not matching include patterns: ${change.file}`,
-              ),
-            );
-          }
-
-          return isIncluded;
-        });
-
-        console.log(chalk.blue('\nFiles to review in this commit:'));
-        filteredFiles.forEach((change) => {
-          if (typeof change.changes !== 'string') {
-            console.error('DEBUG: change.changes is not a string', change);
-          }
-          const changeLength =
-            typeof change.changes === 'string' ? change.changes.length : 0;
-          console.log(chalk.gray(`- ${change.file} (${changeLength} bytes)`));
-        });
-
-        if (filteredFiles.length > 0) {
-          const MAX_FILE_SIZE = 50000;
-          const truncatedFiles = filteredFiles.map((change) => ({
-            ...change,
-            changes:
-              typeof change.changes === 'string' &&
-              change.changes.length > MAX_FILE_SIZE
-                ? change.changes.slice(0, MAX_FILE_SIZE) +
-                  '\n... (content truncated for size limit)'
-                : typeof change.changes === 'string'
-                  ? change.changes
-                  : '',
-          }));
-
-          const combinedContent = truncatedFiles
-            .map((change) => `File: ${change.file}\n${change.changes}\n`)
-            .join('\n---\n\n');
-
-          const MAX_TOTAL_SIZE = 100000;
-          const finalContent =
-            combinedContent.length > MAX_TOTAL_SIZE
-              ? combinedContent.slice(0, MAX_TOTAL_SIZE) +
-                '\n... (content truncated for total size limit)'
-              : combinedContent;
-
-          await processReview(
-            aiProvider,
-            config.rules.codeChanges.prompt,
-            finalContent,
-            `Code Review (Commit: ${commit.hash.slice(0, 7)})`,
-            results,
-          );
-        }
-      }
-
-      // Review commit message if enabled
-      if (config.rules.commitMessage.enabled) {
-        await processReview(
-          aiProvider,
-          config.rules.commitMessage.prompt,
-          commit.message,
-          `Commit Message Review (${commit.hash.slice(0, 7)})`,
-          results,
-        );
-      }
+    if (context.config.rules.commitMessage.enabled) {
+      const results = await reviewCommitMessages(context);
+      await outputReviewResults(context, {
+        commitMessages: [
+          {
+            success: results.success,
+            suggestions: results.suggestions,
+            error: results.error,
+          },
+        ],
+      });
     }
 
-    // Review branch name if enabled (only once for the whole MR)
-    if (config.rules.branchName.enabled) {
-      const branchName = await vcs.getCurrentBranchName();
-      if (branchName) {
-        await processReview(
-          aiProvider,
-          config.rules.branchName.prompt,
-          branchName,
-          'Branch Name',
-          results,
-        );
-      }
+    if (context.config.rules.codeChanges.enabled) {
+      const results = await reviewCodeChanges(context);
+      console.log('results========reviewCodeChanges', results);
+      await outputReviewResults(context, {
+        codeChanges: [
+          {
+            success: results.success,
+            suggestions: results.suggestions,
+            error: results.error,
+          },
+        ],
+      });
     }
 
-    // Display results
-    spinner.stop();
-    if (results.length > 0) {
-      displayResults(results);
-
-      if (
-        process.env.GITHUB_ACTIONS === 'true' ||
-        process.env.GITLAB_CI === 'true'
-      ) {
-        const gitService = GitPlatformFactory.createService();
-        const prDetails = await gitService.getPRDetails();
-
-        if (prDetails) {
-          spinner.text = 'Posting review comments...';
-          await gitService.addPRComment(
-            prDetails.owner,
-            prDetails.repo,
-            prDetails.prNumber,
-            formatReviewComment(results),
-          );
-          spinner.succeed('Review comments posted');
-        }
-      }
-    } else {
-      spinner.succeed('No issues found');
-    }
-
+    spinner.succeed('Code review completed successfully');
     return true;
   } catch (error) {
-    if (spinner) {
-      spinner.fail('Review failed');
-    }
-
-    if (error instanceof Error) {
-      console.error(chalk.red('\nError details:'));
-      console.error(chalk.yellow('Message:'), error.message);
-
-      const message = typeof error.message === 'string' ? error.message : '';
-      const errorDetails = message.split('Details: ')[1];
-      if (typeof errorDetails === 'string' && errorDetails.length > 0) {
-        const errorObj = JSON.parse(errorDetails);
-        if (errorObj.error) {
-          console.error(chalk.yellow('\nOpenAI Error:'));
-          console.error(chalk.gray('Type:'), errorObj.error.type);
-          console.error(chalk.gray('Code:'), errorObj.error.code);
-          console.error(chalk.gray('Message:'), errorObj.error.message);
-        }
-      }
-
-      if (error.stack) {
-        console.error(chalk.gray('\nStack trace:'));
-        console.error(chalk.gray(error.stack));
-      }
-    } else {
-      console.error(chalk.red('\nUnknown error:'), error);
-    }
-
+    await handleReviewError(spinner, error);
     return false;
   } finally {
-    if (spinner) {
-      spinner.stop();
-    }
+    spinner.stop();
   }
 }
 
-function displayResults(results: ReviewResult[]): void {
-  console.log('\n📝 Review Results:\n');
-
-  const allPassed = results.every((result) => result.success);
-
-  if (allPassed) {
-    console.log(chalk.green('🎉 All checks passed! Code looks great!\n'));
-  }
-
-  results.forEach((result) => {
-    const icon = result.success ? '✅' : '❌';
-    console.log(`${icon} ${chalk.bold(result.message)}`);
-
-    if (result.suggestions?.length) {
-      result.suggestions.forEach((suggestion) => {
-        const severity =
-          suggestion.severity === 'error'
-            ? chalk.red
-            : suggestion.severity === 'warning'
-              ? chalk.yellow
-              : chalk.gray;
-        console.log(severity('  └─ ') + suggestion.message);
-      });
-    }
-
-    if (result.errors?.length) {
-      result.errors.forEach((error) => {
-        console.log(chalk.red('  └─ ') + error.message);
-      });
-    }
-
-    console.log(''); // Empty line for readability
-  });
+function buildSuccessResult(
+  suggestions: CodeReviewSuggestion[],
+): CodeReviewResult {
+  return {
+    success: true,
+    suggestions,
+    error: undefined,
+  };
 }
 
-function formatReviewComment(results: ReviewResult[]): string {
-  let comment = '## 🤖 ReviewCopilot Report\n\n';
+function buildErrorResult(error: unknown): CodeReviewResult {
+  return {
+    success: false,
+    suggestions: [],
+    error: {
+      message:
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : 'Unknown error',
+    },
+  };
+}
 
-  results.forEach((result) => {
-    const icon = result.success ? '✅' : '❌';
-    comment += `### ${icon} ${result.message}\n\n`;
+async function withReviewErrorHandling(
+  fn: () => Promise<CodeReviewResult>,
+  fallbackMessage = 'Unknown error',
+): Promise<CodeReviewResult> {
+  try {
+    return await fn();
+  } catch (error) {
+    return buildErrorResult(error);
+  }
+}
 
-    if (result.suggestions?.length) {
-      result.suggestions.forEach((suggestion) => {
-        const severity =
-          suggestion.severity === 'error'
-            ? '❗'
-            : suggestion.severity === 'warning'
-              ? '⚠️'
-              : '💡';
-        comment += `- ${severity} ${suggestion.message}\n`;
-      });
+export async function reviewBranchName(
+  context: ReviewContext,
+): Promise<CodeReviewResult> {
+  return withReviewErrorHandling(async () => {
+    context.spinner.text = 'Reviewing branch name...';
+    const branchName = await context.vcs.getCurrentBranchName();
+    if (!branchName) {
+      return buildErrorResult('Could not get current branch name');
+    }
+    console.log(chalk.blue(`\nReviewing branch: ${chalk.yellow(branchName)}`));
+    const result = await context.aiProvider.review(
+      context.config.rules.branchName.prompt,
+      branchName,
+    );
+    return buildSuccessResult([{ message: result, reviewType: 'general' }]);
+  }, 'Unknown error in branch name review');
+}
+
+export async function reviewCommitMessages(
+  context: ReviewContext,
+): Promise<CodeReviewResult> {
+  return withReviewErrorHandling(async () => {
+    context.spinner.text = 'Getting commit messages...';
+    const commits = await context.vcs.getPullRequestCommits();
+    if (!Array.isArray(commits) || commits.length === 0) {
+      Logger.gray('\nNo commit messages to review.');
+      return buildSuccessResult([]);
     }
 
-    if (result.errors?.length) {
-      result.errors.forEach((error) => {
-        comment += `- ❗ ${error.message}\n`;
-      });
+    Logger.info(`\nFound ${commits.length} commit message(s) to review:`);
+
+    const results: CodeReviewResult[] = [];
+
+    for (const [index, commit] of commits.entries()) {
+      context.spinner.text = `Reviewing commit ${index + 1}/${commits.length}...`;
+      Logger.commitInfo(commit, index);
+
+      try {
+        const result = await context.aiProvider.review(
+          context.config.rules.commitMessage.prompt,
+          commit.message,
+        );
+        results.push(
+          buildSuccessResult([
+            {
+              message:
+                typeof result === 'string' ? result : JSON.stringify(result),
+              reviewType: 'general',
+            },
+          ]),
+        );
+      } catch (error) {
+        results.push(
+          buildErrorResult(
+            `Commit ${commit.hash.slice(0, 7)} - ${commit.author}`,
+          ),
+        );
+      }
+    }
+    return buildSuccessResult(results.flatMap((result) => result.suggestions));
+  }, 'Failed to get commit messages');
+}
+
+export async function reviewCodeChanges(
+  context: ReviewContext,
+): Promise<CodeReviewResult> {
+  return withReviewErrorHandling(async () => {
+    context.spinner.text = 'Getting code changes...';
+    const pullRequestReviewInfo = await context.vcs.getPullRequestFiles();
+    if (!pullRequestReviewInfo) {
+      Logger.gray('\nNo code changes to review.');
+      return buildSuccessResult([
+        {
+          message: 'No code changes found',
+          filename: '',
+          line: 0,
+          severity: 'info',
+          reviewType: 'general',
+        },
+      ]);
     }
 
-    comment += '\n';
+    Logger.prInfo(pullRequestReviewInfo);
+
+    const { filteredFiles, skippedFiles } = await filterAndProcessFiles(
+      context,
+      pullRequestReviewInfo.files || [],
+    );
+    if (filteredFiles.length === 0) {
+      return buildSuccessResult([
+        {
+          message: `No files matched the review patterns. ${skippedFiles} file(s) skipped.`,
+          filename: '',
+          line: 0,
+          severity: 'info',
+          reviewType: 'general',
+        },
+      ]);
+    }
+    context.spinner.text = 'Analyzing code changes...';
+    console.log('filteredFiles========', filteredFiles);
+    console.log('context.prDetails========', context.prDetails);
+    console.log('context.gitService========', context.gitService);
+    // Enhanced: Use line-specific review service if we have PR details and git service
+    if (context.prDetails && context.gitService) {
+      try {
+        Logger.info('\n🔍 Performing line-specific code review...');
+        const lineSpecificService = new LineSpecificReviewService(
+          context.aiProvider,
+          context.gitService,
+        );
+        // Fix: Map filteredFiles to required format for performLineSpecificReview
+        const filesForLineReview = filteredFiles.map((f) => ({
+          filename: f.filename,
+          changes: f.changes,
+        }));
+        const reviewResult =
+          await lineSpecificService.performLineSpecificReview(
+            filesForLineReview,
+            pullRequestReviewInfo.hash,
+            context.prDetails.owner,
+            context.prDetails.repo,
+            context.prDetails.pullNumber,
+            context.config.rules.codeChanges.prompt,
+          );
+        Logger.success(
+          `✅ Posted ${reviewResult.commentsPosted} line-specific comments`,
+        );
+        Logger.info(
+          `📋 Found ${reviewResult.generalSuggestions.length} general suggestions`,
+        );
+        // Return combined results
+        return buildSuccessResult([
+          ...reviewResult.generalSuggestions,
+          ...reviewResult.lineSpecificSuggestions,
+        ]);
+      } catch (error) {
+        Logger.warning(
+          '⚠️  Line-specific review failed, falling back to general review',
+        );
+        Logger.gray(error instanceof Error ? error.message : 'Unknown error');
+      }
+    }
+    // Fallback: Use traditional general review
+    const reviewContent = prepareCodeReviewFilesContent(filteredFiles);
+    try {
+      const aiResult = await context.aiProvider.review(
+        context.config.rules.codeChanges.prompt,
+        reviewContent,
+      );
+      return buildSuccessResult([
+        {
+          message: aiResult,
+          reviewType: 'general',
+        },
+      ]);
+    } catch (error) {
+      return buildErrorResult(error);
+    }
+  }, 'Unknown error in code changes review');
+}
+
+export async function filterAndProcessFiles(
+  context: ReviewContext,
+  files: PullRequestFile[],
+) {
+  const patterns = context.config.rules.codeChanges.filePatterns || [];
+
+  const normalizedFiles = files.map((f) => ({
+    ...f,
+    changes: typeof f.changes === 'string' ? f.changes : '',
+  }));
+
+  const filteredFiles = normalizedFiles.filter((change) => {
+    const isIgnored = patterns
+      .filter((pattern: string) => pattern.startsWith('!'))
+      .some((pattern: string) => {
+        const cleanPattern = pattern.slice(1);
+        return micromatch.isMatch(change.filename, cleanPattern, { dot: true });
+      });
+
+    if (isIgnored) {
+      Logger.gray(`⏭️  Ignored: ${change.filename}`);
+      return false;
+    }
+
+    const isIncluded = patterns
+      .filter((pattern: string) => !pattern.startsWith('!'))
+      .some((pattern: string) =>
+        micromatch.isMatch(change.filename, pattern, { dot: true }),
+      );
+
+    if (!isIncluded) {
+      Logger.gray(`⏭️  Skipped: ${change.filename} (not matching patterns)`);
+    } else {
+      const changeLength = change.changes.length;
+      Logger.success(`✅ Included: ${change.filename} (${changeLength} bytes)`);
+    }
+
+    return isIncluded;
   });
 
-  return comment;
+  return {
+    filteredFiles,
+    skippedFiles: normalizedFiles.length - filteredFiles.length,
+  };
+}
+
+export function prepareCodeReviewFilesContent(
+  files: PullRequestFile[],
+): string {
+  const MAX_FILE_SIZE = 50000;
+  const MAX_TOTAL_SIZE = 100000;
+
+  const truncatedFiles = files.map((change) => ({
+    ...change,
+    changes:
+      change.changes.length > MAX_FILE_SIZE
+        ? change.changes.slice(0, MAX_FILE_SIZE) +
+          '\n... (content truncated for size limit)'
+        : change.changes,
+  }));
+
+  const combinedContent = truncatedFiles
+    .map((change) => `File: ${change.filename}\n${change.changes}\n`)
+    .join('\n---\n\n');
+
+  return combinedContent.length > MAX_TOTAL_SIZE
+    ? combinedContent.slice(0, MAX_TOTAL_SIZE) +
+        '\n... (content truncated for total size limit)'
+    : combinedContent;
+}
+
+export async function handleReviewError(
+  spinner: ora.Ora,
+  error: unknown,
+): Promise<void> {
+  spinner.fail('Review failed');
+
+  if (error instanceof Error) {
+    Logger.error('\n❌ Error Details:');
+    Logger.warning('Message: ' + error.message);
+
+    const message = error.message;
+    const errorDetails = message.split('Details: ')[1];
+    if (errorDetails) {
+      try {
+        const errorObj = JSON.parse(errorDetails);
+        if (errorObj.error) {
+          Logger.warning('\n🤖 AI Provider Error:');
+          Logger.gray('Type: ' + errorObj.error.type);
+          Logger.gray('Code: ' + errorObj.error.code);
+          Logger.gray('Message: ' + errorObj.error.message);
+        }
+      } catch {
+        Logger.gray('Raw error details: ' + errorDetails);
+      }
+    }
+
+    if (error.stack) {
+      Logger.gray('\n📋 Stack Trace:');
+      Logger.gray(error.stack);
+    }
+  } else {
+    Logger.error('\n❌ Unknown Error: ' + String(error));
+  }
 }

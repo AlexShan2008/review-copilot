@@ -1,10 +1,9 @@
-import OpenAI from 'openai';
-import { AIProviderConfig } from '../types';
+import { AIProviderConfig } from '../types/review.types';
 import { BaseProvider } from './base-provider';
 import chalk from 'chalk';
 import { ChatCompletionMessageParam } from 'openai/resources';
 import util from 'util';
-import { SYSTEM_MESSAGES } from '../constants/ai-messages';
+import { SYSTEM_MESSAGES, ReviewLanguage } from '../constants/ai-messages';
 
 export class OpenAIProvider extends BaseProvider {
   constructor(config: AIProviderConfig) {
@@ -41,7 +40,7 @@ export class OpenAIProvider extends BaseProvider {
       ];
 
       const requestBody = {
-        model: this.config.model || 'gpt-3.5-turbo',
+        model: this.config.model,
         messages,
         temperature: 0.7,
         stream: false as const,

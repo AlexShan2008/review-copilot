@@ -87,7 +87,7 @@ export const setupMocks = (
   const mockGitService = {
     getPRDetails: jest
       .fn()
-      .mockResolvedValue({ owner: 'owner', repo: 'repo', prNumber: 1 }),
+      .mockResolvedValue({ owner: 'owner', repo: 'repo', pullNumber: 1 }),
     addPRComment: jest.fn().mockResolvedValue(undefined),
   };
   (GitPlatformFactory.createService as jest.Mock).mockReturnValue(

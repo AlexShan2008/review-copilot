@@ -1,10 +1,21 @@
 import { Octokit } from '@octokit/rest';
 import fs from 'fs';
 import {
+  CreateReviewCommentParams,
   IGitPlatformService,
   GitPlatformDetails,
-} from './git-platform.interface';
+  createIssueComment,
+  GetFileContentParams,
+  ReplyToReviewCommentParams,
+  ReplyToCommentParams,
+} from './services.types';
 import { execSync } from 'child_process';
+import ora from 'ora';
+import chalk from 'chalk';
+import { ConfigManager } from '../config/config-manager';
+import { GitPlatformFactory } from './git-platform-factory';
+import { SelectiveReviewService } from './selective-review-service';
+import { SelectiveReviewContext } from '../types/selective-review.types';
 
 export class GitHubService implements IGitPlatformService {
   private client: Octokit;
@@ -13,61 +24,81 @@ export class GitHubService implements IGitPlatformService {
     this.client = new Octokit({ auth: token });
   }
 
-  async addPRComment(
-    owner: string,
-    repo: string,
-    prNumber: number,
-    comment: string,
-  ): Promise<void> {
+  async createIssueComment({
+    owner,
+    repo,
+    issue_number,
+    body,
+  }: createIssueComment): Promise<void> {
     await this.client.issues.createComment({
       owner,
       repo,
-      issue_number: prNumber,
-      body: comment,
+      issue_number,
+      body,
     });
   }
 
-  async replyToComment(
-    owner: string,
-    repo: string,
-    prNumber: number,
-    commentId: number,
-    comment: string,
-  ): Promise<void> {
+  async createReviewComment({
+    owner,
+    repo,
+    pullNumber: pullNumber,
+    body,
+    commitId,
+    path,
+    line,
+    side,
+    startLine,
+    startSide,
+    inReplyTo,
+    subjectType,
+  }: CreateReviewCommentParams): Promise<void> {
+    await this.client.pulls.createReviewComment({
+      owner,
+      repo,
+      pull_number: pullNumber,
+      body,
+      commit_id: commitId,
+      path,
+      line,
+      side,
+      start_line: startLine,
+      start_side: startSide,
+      in_reply_to: inReplyTo,
+      subject_type: subjectType,
+    });
+  }
+
+  async replyToComment(params: ReplyToCommentParams): Promise<void> {
     // GitHub doesn't have a direct reply-to-comment API
     // Instead, we'll create a new comment with a reference to the original
     const { data: originalComment } = await this.client.issues.getComment({
-      owner,
-      repo,
-      comment_id: commentId,
+      owner: params.owner,
+      repo: params.repo,
+      comment_id: params.commentId,
     });
 
-    const replyComment = `> ${originalComment.body}\n\n${comment}`;
+    const replyComment = `> ${originalComment.body}\n\n${params.comment}`;
     await this.client.issues.createComment({
-      owner,
-      repo,
-      issue_number: prNumber,
+      owner: params.owner,
+      repo: params.repo,
+      issue_number: params.pullNumber,
       body: replyComment,
     });
   }
 
   async replyToReviewComment(
-    owner: string,
-    repo: string,
-    prNumber: number,
-    threadId: string,
-    comment: string,
+    params: ReplyToReviewCommentParams,
   ): Promise<void> {
     await this.client.pulls.createReplyForReviewComment({
-      owner,
-      repo,
-      pull_number: prNumber,
-      comment_id: parseInt(threadId, 10),
-      body: comment,
+      owner: params.owner,
+      repo: params.repo,
+      pull_number: params.pullNumber,
+      comment_id: parseInt(params.threadId, 10),
+      body: params.comment,
     });
   }
 
-  async getPRDetails(): Promise<GitPlatformDetails | null> {
+  async getPRDetails(): Promise<GitPlatformDetails | undefined> {
     if (process.env.GITHUB_EVENT_PATH) {
       try {
         const eventData = JSON.parse(
@@ -78,8 +109,10 @@ export class GitHubService implements IGitPlatformService {
           return {
             owner: eventData.repository.owner.login,
             repo: eventData.repository.name,
-            prNumber: eventData.pull_request.number,
+            pullNumber: eventData.pull_request.number,
             platform: 'github',
+            commitId: eventData.pull_request.head.sha,
+            path: eventData.pull_request.head.path,
           };
         }
       } catch (error) {
@@ -88,18 +121,20 @@ export class GitHubService implements IGitPlatformService {
     }
 
     const [owner, repo] = (process.env.GITHUB_REPOSITORY || '').split('/');
-    const prNumber = parseInt(process.env.GITHUB_EVENT_NUMBER || '', 10);
+    const pullNumber = parseInt(process.env.GITHUB_EVENT_NUMBER || '', 10);
 
-    if (owner && repo && !isNaN(prNumber)) {
+    if (owner && repo && !isNaN(pullNumber)) {
       return {
         owner,
         repo,
-        prNumber,
+        pullNumber,
         platform: 'github',
+        commitId: '',
+        path: '',
       };
     }
 
-    return null;
+    return undefined;
   }
 
   async getCurrentBranch(): Promise<string> {
@@ -110,25 +145,20 @@ export class GitHubService implements IGitPlatformService {
     return execSync('git log -1 --pretty=%B').toString().trim();
   }
 
-  async getFileContent(
-    owner: string,
-    repo: string,
-    filePath: string,
-    prNumber: number,
-  ): Promise<string | null> {
+  async getFileContent(params: GetFileContentParams): Promise<string | null> {
     try {
       // Get the PR details to get the head SHA
       const { data: pullRequest } = await this.client.pulls.get({
-        owner,
-        repo,
-        pull_number: prNumber,
+        owner: params.owner,
+        repo: params.repo,
+        pull_number: params.pullNumber,
       });
 
       // Get the file content from the PR's head branch
       const { data: fileData } = await this.client.repos.getContent({
-        owner,
-        repo,
-        path: filePath,
+        owner: params.owner,
+        repo: params.repo,
+        path: params.filePath,
         ref: pullRequest.head.sha,
       });
 

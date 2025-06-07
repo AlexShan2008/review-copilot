@@ -1,12 +1,17 @@
 import {
   IGitPlatformService,
   GitPlatformDetails,
-} from './git-platform.interface';
+  CreateReviewCommentParams,
+  createIssueComment,
+  ReplyToCommentParams,
+  ReplyToReviewCommentParams,
+  GetFileContentParams,
+} from './services.types';
 import { execSync } from 'child_process';
 import fs from 'fs';
 
 export class LocalGitService implements IGitPlatformService {
-  async getPRDetails(): Promise<GitPlatformDetails | null> {
+  async getPRDetails(): Promise<GitPlatformDetails | undefined> {
     // In local development, we'll use the current branch and repository info
     try {
       const remoteUrl = execSync('git config --get remote.origin.url')
@@ -34,52 +39,51 @@ export class LocalGitService implements IGitPlatformService {
       return {
         owner,
         repo,
-        prNumber: 1, // Dummy PR number for local development
+        pullNumber: 1, // Dummy PR number for local development
         platform: 'github', // Default to GitHub for local development
+        commitId: '',
+        path: '',
       };
     } catch (error) {
       console.error('Error getting local git details:', error);
-      return null;
+      return undefined;
     }
   }
 
-  async addPRComment(
-    owner: string,
-    repo: string,
-    prNumber: number,
-    comment: string,
-  ): Promise<void> {
+  async createIssueComment({
+    owner,
+    repo,
+    issue_number,
+    body,
+  }: createIssueComment): Promise<void> {
     // In local development, just log the comment
     console.log('\n=== Review Comment ===');
-    console.log(comment);
+    console.log(body);
     console.log('=====================\n');
   }
 
-  async replyToComment(
-    owner: string,
-    repo: string,
-    prNumber: number,
-    commentId: number,
-    comment: string,
-  ): Promise<void> {
+  async createReviewComment(params: CreateReviewCommentParams): Promise<void> {
+    // In local development, just log the comment
+    console.log('\n=== Review Comment ===');
+    console.log(params.body);
+    console.log('=====================\n');
+  }
+
+  async replyToComment(params: ReplyToCommentParams): Promise<void> {
     // In local development, just log the reply
     console.log('\n=== Reply to Comment ===');
-    console.log(`Comment ID: ${commentId}`);
-    console.log(comment);
+    console.log(`Comment ID: ${params.commentId}`);
+    console.log(params.comment);
     console.log('=====================\n');
   }
 
   async replyToReviewComment(
-    owner: string,
-    repo: string,
-    prNumber: number,
-    threadId: string,
-    comment: string,
+    params: ReplyToReviewCommentParams,
   ): Promise<void> {
     // In local development, just log the review reply
     console.log('\n=== Reply to Review Comment ===');
-    console.log(`Thread ID: ${threadId}`);
-    console.log(comment);
+    console.log(`Thread ID: ${params.threadId}`);
+    console.log(params.comment);
     console.log('=====================\n');
   }
 
@@ -91,16 +95,11 @@ export class LocalGitService implements IGitPlatformService {
     return execSync('git log -1 --pretty=%B').toString().trim();
   }
 
-  async getFileContent(
-    owner: string,
-    repo: string,
-    filePath: string,
-    prNumber: number,
-  ): Promise<string | null> {
+  async getFileContent(params: GetFileContentParams): Promise<string | null> {
     try {
       // In local development, read the file directly from the filesystem
-      if (fs.existsSync(filePath)) {
-        return fs.readFileSync(filePath, 'utf8');
+      if (fs.existsSync(params.filePath)) {
+        return fs.readFileSync(params.filePath, 'utf8');
       }
       return null;
     } catch (error) {

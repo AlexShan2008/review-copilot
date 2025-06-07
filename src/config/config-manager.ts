@@ -1,71 +1,109 @@
 import { readFile } from 'fs/promises';
 import { parse } from 'yaml';
 import { z } from 'zod';
-import { Config } from '../types';
+import {
+  AIProviderType,
+  ProviderFactoryConfig,
+  TriggerConfig,
+} from '../providers/provider.types';
+import { ReviewLanguage } from '../constants/ai-messages';
 
-const providerSchema = z.object({
-  enabled: z.boolean(),
-  apiKey: z.string(),
-  model: z.string(),
-  baseURL: z.string(),
-  defaultHeaders: z.record(z.string()).optional(),
-  timeout: z.number().optional(),
-  reviewLanguage: z.enum(['en', 'zh', 'ja', 'ko']).optional(),
-});
+const providerSchema = z
+  .object({
+    enabled: z.boolean(),
+    apiKey: z.string(),
+    model: z.string(),
+    baseURL: z.string(),
+    defaultHeaders: z.record(z.string()).optional(),
+    timeout: z.number().optional(),
+    reviewLanguage: z.enum(['en', 'zh', 'ja', 'ko'] as const).optional(),
+  })
+  .transform((config) => ({
+    enabled: config.enabled,
+    apiKey: config.apiKey,
+    model: config.model,
+    baseURL: config.baseURL,
+    reviewLanguage: config.reviewLanguage as ReviewLanguage | undefined,
+  }));
 
-const configSchema = z.object({
-  providers: z.record(providerSchema),
-  ai: z
-    .object({
-      provider: z.enum(['openai', 'deepseek']),
-      apiKey: z.string(),
-      model: z.string(),
-      baseURL: z.string().optional(),
-      reviewLanguage: z.enum(['en', 'zh']).optional(),
-    })
-    .optional(),
-  triggers: z.array(
-    z.object({
-      on: z.enum(['pull_request', 'merge_request', 'push']),
-      actions: z.array(z.string()).optional(),
+const triggerSchema = z.object({
+  on: z.enum(['pull_request', 'merge_request', 'push'] as const),
+  actions: z.array(z.string()).optional(),
+}) satisfies z.ZodType<TriggerConfig>;
+
+const configSchema = z
+  .object({
+    providers: z.record(z.string(), providerSchema).transform((providers) => {
+      const enabledProvider =
+        (Object.entries(providers).find(
+          ([_, p]) => p.enabled,
+        )?.[0] as AIProviderType) || 'openai';
+      if (!['openai', 'deepseek'].includes(enabledProvider)) {
+        throw new Error(`Unsupported provider type: ${enabledProvider}`);
+      }
+      return { [enabledProvider]: providers[enabledProvider] };
     }),
-  ),
-  rules: z.object({
-    commitMessage: z.object({
-      enabled: z.boolean(),
-      pattern: z.string().optional(),
-      prompt: z.string(),
+    triggers: z.array(triggerSchema),
+    rules: z.object({
+      commitMessage: z
+        .object({
+          enabled: z.boolean(),
+          pattern: z.string().optional(),
+          prompt: z.string(),
+        })
+        .transform((rule) => ({
+          ...rule,
+          pattern: rule.pattern || '',
+        })),
+      branchName: z
+        .object({
+          enabled: z.boolean(),
+          pattern: z.string().optional(),
+          prompt: z.string(),
+        })
+        .transform((rule) => ({
+          ...rule,
+          pattern: rule.pattern || '',
+        })),
+      codeChanges: z
+        .object({
+          enabled: z.boolean(),
+          filePatterns: z.array(z.string()).optional(),
+          prompt: z.string(),
+        })
+        .transform((rule) => ({
+          ...rule,
+          filePatterns: rule.filePatterns || [],
+        })),
     }),
-    branchName: z.object({
-      enabled: z.boolean(),
-      pattern: z.string().optional(),
-      prompt: z.string(),
-    }),
-    codeChanges: z.object({
-      enabled: z.boolean(),
-      filePatterns: z.array(z.string()).optional(),
-      prompt: z.string(),
-    }),
-  }),
-  customReviewPoints: z
-    .array(
-      z.object({
-        name: z.string(),
-        prompt: z.string(),
-      }),
-    )
-    .optional(),
-});
+    customReviewPoints: z
+      .array(
+        z.object({
+          name: z.string(),
+          prompt: z.string(),
+        }),
+      )
+      .optional()
+      .transform((points) => points || []),
+  })
+  .transform((config) => ({
+    providers: config.providers,
+    triggers: config.triggers,
+    rules: config.rules,
+    customReviewPoints: config.customReviewPoints,
+  }));
 
 export class ConfigManager {
   private static instance: ConfigManager;
-  private config: Config | null = null;
+  private config: ProviderFactoryConfig | null = null;
+  private configPromise: Promise<ProviderFactoryConfig> | null = null;
 
   private constructor() {}
 
-  public static getInstance(): ConfigManager {
+  public static async getInstance(configPath?: string): Promise<ConfigManager> {
     if (!ConfigManager.instance) {
       ConfigManager.instance = new ConfigManager();
+      await ConfigManager.instance.loadConfig(configPath);
     }
     return ConfigManager.instance;
   }
@@ -90,27 +128,29 @@ export class ConfigManager {
     return obj;
   }
 
-  public async loadConfig(
+  private async loadConfig(
     path: string = '.review-copilot.yaml',
-  ): Promise<Config> {
-    try {
+  ): Promise<ProviderFactoryConfig> {
+    if (this.configPromise) {
+      return this.configPromise;
+    }
+
+    this.configPromise = (async () => {
       const configFile = await readFile(path, 'utf8');
       const parsedConfig = parse(configFile);
-
-      // Replace environment variables before validation
       const configWithEnv = this.replaceEnvVariables(parsedConfig);
-
-      const validatedConfig = configSchema.parse(configWithEnv);
-      this.config = validatedConfig as Config;
+      this.config = configSchema.parse(configWithEnv);
       return this.config;
-    } catch (error) {
-      throw new Error(`Failed to load config: ${error}`);
-    }
+    })();
+
+    return this.configPromise;
   }
 
-  public getConfig(): Config {
+  public getConfig(): ProviderFactoryConfig {
     if (!this.config) {
-      throw new Error('Config not loaded');
+      throw new Error(
+        'Config not loaded. Please ensure getInstance() was and awaited.',
+      );
     }
     return this.config;
   }

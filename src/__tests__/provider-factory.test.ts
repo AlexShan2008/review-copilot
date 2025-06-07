@@ -1,29 +1,28 @@
 import { ProviderFactory } from '../providers/provider-factory';
 import { OpenAIProvider } from '../providers/openai-provider';
 import { DeepSeekProvider } from '../providers/deepseek-provider';
-import { Config } from '../types';
+import {
+  ProviderFactoryConfig,
+  AIProviderConfig as ProviderFactoryAIProviderConfig,
+} from '../providers/provider.types';
 
 describe('ProviderFactory', () => {
-  const mockConfig: Config = {
+  const mockConfig: ProviderFactoryConfig = {
     providers: {
       openai: {
         enabled: true,
         apiKey: 'test-key',
         model: 'gpt-4o-mini',
         baseURL: 'https://api.openai.com/v1',
-      },
+        reviewLanguage: 'en' as const,
+      } as ProviderFactoryAIProviderConfig,
       deepseek: {
         enabled: false,
         apiKey: 'test-key-2',
         model: 'deepseek-chat',
         baseURL: 'https://api.deepseek.com/v1',
-      },
-    },
-    ai: {
-      provider: 'openai',
-      apiKey: 'test-key',
-      model: 'gpt-4o-mini',
-      baseURL: 'https://api.openai.com/v1',
+        reviewLanguage: 'en' as const,
+      } as ProviderFactoryAIProviderConfig,
     },
     triggers: [],
     rules: {
@@ -52,11 +51,23 @@ describe('ProviderFactory', () => {
   });
 
   it('should create DeepSeek provider when DeepSeek is enabled', () => {
-    const deepseekConfig = {
+    const deepseekConfig: ProviderFactoryConfig = {
       ...mockConfig,
       providers: {
-        openai: { ...mockConfig.providers.openai, enabled: false },
-        deepseek: { ...mockConfig.providers.deepseek, enabled: true },
+        openai: {
+          enabled: false,
+          apiKey: 'test-key',
+          model: 'gpt-4o-mini',
+          baseURL: 'https://api.openai.com/v1',
+          reviewLanguage: 'en' as const,
+        } as ProviderFactoryAIProviderConfig,
+        deepseek: {
+          enabled: true,
+          apiKey: 'test-key-2',
+          model: 'deepseek-chat',
+          baseURL: 'https://api.deepseek.com/v1',
+          reviewLanguage: 'en' as const,
+        } as ProviderFactoryAIProviderConfig,
       },
     };
     const provider = ProviderFactory.createProvider(deepseekConfig);
@@ -64,11 +75,23 @@ describe('ProviderFactory', () => {
   });
 
   it('should throw error when no provider is enabled', () => {
-    const noProviderConfig = {
+    const noProviderConfig: ProviderFactoryConfig = {
       ...mockConfig,
       providers: {
-        openai: { ...mockConfig.providers.openai, enabled: false },
-        deepseek: { ...mockConfig.providers.deepseek, enabled: false },
+        openai: {
+          enabled: false,
+          apiKey: 'test-key',
+          model: 'gpt-4o-mini',
+          baseURL: 'https://api.openai.com/v1',
+          reviewLanguage: 'en' as const,
+        } as ProviderFactoryAIProviderConfig,
+        deepseek: {
+          enabled: false,
+          apiKey: 'test-key-2',
+          model: 'deepseek-chat',
+          baseURL: 'https://api.deepseek.com/v1',
+          reviewLanguage: 'en' as const,
+        } as ProviderFactoryAIProviderConfig,
       },
     };
     expect(() => ProviderFactory.createProvider(noProviderConfig)).toThrow(
@@ -77,11 +100,23 @@ describe('ProviderFactory', () => {
   });
 
   it('should throw error when multiple providers are enabled', () => {
-    const multiProviderConfig = {
+    const multiProviderConfig: ProviderFactoryConfig = {
       ...mockConfig,
       providers: {
-        openai: { ...mockConfig.providers.openai, enabled: true },
-        deepseek: { ...mockConfig.providers.deepseek, enabled: true },
+        openai: {
+          enabled: true,
+          apiKey: 'test-key',
+          model: 'gpt-4o-mini',
+          baseURL: 'https://api.openai.com/v1',
+          reviewLanguage: 'en' as const,
+        } as ProviderFactoryAIProviderConfig,
+        deepseek: {
+          enabled: true,
+          apiKey: 'test-key-2',
+          model: 'deepseek-chat',
+          baseURL: 'https://api.deepseek.com/v1',
+          reviewLanguage: 'en' as const,
+        } as ProviderFactoryAIProviderConfig,
       },
     };
     expect(() => ProviderFactory.createProvider(multiProviderConfig)).toThrow(
@@ -90,10 +125,16 @@ describe('ProviderFactory', () => {
   });
 
   it('should validate provider configuration', () => {
-    const invalidConfig = {
+    const invalidConfig: ProviderFactoryConfig = {
       ...mockConfig,
       providers: {
-        openai: { ...mockConfig.providers.openai, apiKey: '' },
+        openai: {
+          enabled: true,
+          apiKey: '',
+          model: 'gpt-4o-mini',
+          baseURL: 'https://api.openai.com/v1',
+          reviewLanguage: 'en' as const,
+        } as ProviderFactoryAIProviderConfig,
       },
     };
     expect(() => ProviderFactory.validateConfig(invalidConfig)).toThrow(
@@ -103,13 +144,16 @@ describe('ProviderFactory', () => {
 
   it('should warn about non-standard baseURL', () => {
     const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
-    const nonStandardConfig = {
+    const nonStandardConfig: ProviderFactoryConfig = {
       ...mockConfig,
       providers: {
         openai: {
-          ...mockConfig.providers.openai,
+          enabled: true,
+          apiKey: 'test-key',
+          model: 'gpt-4o-mini',
           baseURL: 'https://api.example.com',
-        },
+          reviewLanguage: 'en' as const,
+        } as ProviderFactoryAIProviderConfig,
       },
     };
     ProviderFactory.validateConfig(nonStandardConfig);

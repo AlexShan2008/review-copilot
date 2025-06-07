@@ -1,10 +1,11 @@
 import { ProviderFactory } from '../providers/provider-factory';
 import { ConfigManager } from '../config/config-manager';
-import {
-  SelectiveReviewContext,
-  SelectiveReviewResult,
-} from '../types/selective-review';
+import { SelectiveReviewContext } from '../types/selective-review.types';
 import { GitPlatformFactory } from './git-platform-factory';
+import {
+  CodeReviewResult,
+  CodeReviewSuggestion,
+} from '../providers/provider.types';
 
 export class SelectiveReviewService {
   private static instance: SelectiveReviewService;
@@ -25,10 +26,10 @@ export class SelectiveReviewService {
    */
   public async processSelectiveReview(
     context: SelectiveReviewContext,
-  ): Promise<SelectiveReviewResult> {
-    const configManager = ConfigManager.getInstance();
+  ): Promise<CodeReviewResult> {
+    const configManager = await ConfigManager.getInstance();
     const config = configManager.getConfig();
-    const aiProvider = ProviderFactory.createProvider(config);
+    const aiProvider = ProviderFactory.createProvider(config as any);
 
     try {
       // Create a prompt that includes the context of the review
@@ -40,21 +41,24 @@ export class SelectiveReviewService {
       // Get the review from the AI provider
       const result = await aiProvider.review(prompt, context.fullFileContent);
 
-      // Format the result
-      const lineRange =
-        context.startLine === context.endLine
-          ? `line ${context.startLine}`
-          : `lines ${context.startLine}-${context.endLine}`;
-      const reviewResult: SelectiveReviewResult = {
+      // Format the result as a CodeReviewResult
+      const suggestions: CodeReviewSuggestion[] = result
+        ? [
+            {
+              message:
+                typeof result === 'string' ? result : JSON.stringify(result),
+              filename: context.filePath,
+              line: context.startLine,
+              severity: 'info',
+              reviewType: 'line-specific',
+            },
+          ]
+        : [];
+
+      const reviewResult: CodeReviewResult = {
         success: true,
-        message: `Selective Review for ${context.filePath} (${lineRange})`,
-        suggestions: result ? [result] : [],
-        errors: [],
-        context: {
-          filePath: context.filePath,
-          startLine: context.startLine,
-          endLine: context.endLine,
-        },
+        suggestions,
+        error: undefined,
       };
 
       // Post the review as a comment
@@ -64,15 +68,10 @@ export class SelectiveReviewService {
     } catch (error) {
       return {
         success: false,
-        message: `Failed to review ${context.filePath}`,
         suggestions: [],
-        errors: [
-          error instanceof Error ? error.message : 'Unknown error occurred',
-        ],
-        context: {
-          filePath: context.filePath,
-          startLine: context.startLine,
-          endLine: context.endLine,
+        error: {
+          message:
+            error instanceof Error ? error.message : 'Unknown error occurred',
         },
       };
     }
@@ -115,10 +114,10 @@ ${context.fullFileContent
    */
   private async postReviewComment(
     context: SelectiveReviewContext,
-    result: SelectiveReviewResult,
+    result: CodeReviewResult,
   ): Promise<void> {
     const gitService = GitPlatformFactory.createService();
-    const comment = this.formatSelectiveReviewComment(result);
+    const comment = this.formatSelectiveReviewComment(context, result);
 
     try {
       // Check if this is a PR review comment based on event type
@@ -130,36 +129,36 @@ ${context.fullFileContent
           `Attempting to reply to review comment thread ${context.threadId}...`,
         );
         // For PR review comments, use the review comment API
-        await gitService.replyToReviewComment(
-          context.owner,
-          context.repo,
-          context.prNumber,
-          context.threadId,
+        await gitService.replyToReviewComment({
+          owner: context.owner,
+          repo: context.repo,
+          pullNumber: context.pullNumber,
+          threadId: context.threadId,
           comment,
-        );
+        });
         console.log('Successfully replied to review comment thread');
       } else if (context.commentId) {
         console.log(`Attempting to reply to comment ${context.commentId}...`);
         // For regular PR comments, use the issues comments API
-        await gitService.replyToComment(
-          context.owner,
-          context.repo,
-          context.prNumber,
-          context.commentId,
+        await gitService.replyToComment({
+          owner: context.owner,
+          repo: context.repo,
+          pullNumber: context.pullNumber,
+          commentId: context.commentId,
           comment,
-        );
+        });
         console.log('Successfully replied to comment');
       } else {
         console.log(
           'No comment ID or thread ID provided, creating new comment...',
         );
         // Fallback to creating a new comment
-        await gitService.addPRComment(
-          context.owner,
-          context.repo,
-          context.prNumber,
-          comment,
-        );
+        await gitService.createIssueComment({
+          owner: context.owner,
+          repo: context.repo,
+          issue_number: context.pullNumber,
+          body: comment,
+        });
         console.log('Successfully created new comment');
       }
     } catch (error) {
@@ -179,27 +178,21 @@ ${context.fullFileContent
   /**
    * Format the review results into a markdown comment
    */
-  private formatSelectiveReviewComment(result: SelectiveReviewResult): string {
+  private formatSelectiveReviewComment(
+    context: SelectiveReviewContext,
+    result: CodeReviewResult,
+  ): string {
     let comment = ``;
-    // Show single line number when startLine equals endLine
-    const lineRange =
-      result.context.startLine === result.context.endLine
-        ? `line ${result.context.startLine}`
-        : `lines ${result.context.startLine}-${result.context.endLine}`;
-    comment += `Reviewing ${result.context.filePath} (${lineRange})\n\n`;
 
     if (result.suggestions?.length) {
-      comment += `### Suggestions\n\n`;
       result.suggestions.forEach((suggestion) => {
-        comment += `- ${suggestion}\n`;
+        comment += `- ${suggestion.message}\n`;
       });
     }
 
-    if (result.errors?.length) {
+    if (result.error) {
       comment += `\n### Errors\n\n`;
-      result.errors.forEach((error) => {
-        comment += `- ❗ ${error}\n`;
-      });
+      comment += `- ${result.error.message}\n`;
     }
 
     return comment;

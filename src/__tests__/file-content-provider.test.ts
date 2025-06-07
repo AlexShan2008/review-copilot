@@ -4,6 +4,7 @@ import {
   GitPlatformFileContentProvider,
   FileContentProviderFactory,
 } from '../services/file-content-provider';
+import { GitPlatformDetails } from '../services/services.types';
 
 describe('LocalFileContentProvider', () => {
   it('should return file content if file exists', async () => {
@@ -37,7 +38,10 @@ describe('GitPlatformFileContentProvider', () => {
     const content = await provider.getFileContent('file.txt', {
       owner: 'alex',
       repo: 'repo',
-      prNumber: 1,
+      pullNumber: 1,
+      platform: 'github',
+      commitId: 'abc123',
+      path: 'main',
     });
     expect(gitServiceMock.getFileContent).toHaveBeenCalledWith(
       'alex',
@@ -49,7 +53,16 @@ describe('GitPlatformFileContentProvider', () => {
   });
 
   it('should throw if context is missing', async () => {
-    await expect(provider.getFileContent('file.txt', {})).rejects.toThrow(
+    await expect(
+      provider.getFileContent('file.txt', {
+        owner: 'alex',
+        repo: 'repo',
+        pullNumber: 1,
+        platform: 'github',
+        commitId: '',
+        path: '',
+      } as GitPlatformDetails),
+    ).rejects.toThrow(
       'Missing required context for Git platform file content retrieval',
     );
   });

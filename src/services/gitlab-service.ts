@@ -2,7 +2,12 @@ import { Gitlab } from '@gitbeaker/rest';
 import {
   IGitPlatformService,
   GitPlatformDetails,
-} from './git-platform.interface';
+  CreateReviewCommentParams,
+  createIssueComment,
+  ReplyToCommentParams,
+  ReplyToReviewCommentParams,
+  GetFileContentParams,
+} from './services.types';
 
 export class GitLabService implements IGitPlatformService {
   private client: InstanceType<typeof Gitlab>;
@@ -13,67 +18,67 @@ export class GitLabService implements IGitPlatformService {
     });
   }
 
-  async getPRDetails(): Promise<GitPlatformDetails | null> {
+  async getPRDetails(): Promise<GitPlatformDetails | undefined> {
     const mrIid = process.env.CI_MERGE_REQUEST_IID;
-    if (!mrIid) return null;
+    if (!mrIid) return undefined;
 
     return {
       owner: process.env.CI_PROJECT_NAMESPACE || '',
       repo: process.env.CI_PROJECT_NAME || '',
-      prNumber: parseInt(mrIid, 10),
+      pullNumber: parseInt(mrIid, 10),
       platform: 'gitlab',
+      commitId: process.env.CI_COMMIT_SHA || '',
+      path: process.env.CI_MERGE_REQUEST_TARGET_BRANCH_NAME || '',
     };
   }
 
-  async addPRComment(
-    owner: string,
-    repo: string,
-    prNumber: number,
-    comment: string,
-  ): Promise<void> {
+  async createIssueComment({
+    owner,
+    repo,
+    issue_number,
+    body,
+  }: createIssueComment): Promise<void> {
     await this.client.MergeRequestNotes.create(
       `${owner}/${repo}`,
-      prNumber,
-      comment,
+      issue_number,
+      body,
     );
   }
 
-  async replyToComment(
-    owner: string,
-    repo: string,
-    prNumber: number,
-    commentId: number,
-    comment: string,
-  ): Promise<void> {
+  async createReviewComment(params: CreateReviewCommentParams): Promise<void> {
+    await this.client.MergeRequestNotes.create(
+      `${params.owner}/${params.repo}`,
+      params.pullNumber,
+      params.body,
+    );
+  }
+
+  async replyToComment(params: ReplyToCommentParams): Promise<void> {
     // Get the original comment
     const originalNote = await this.client.MergeRequestNotes.show(
-      `${owner}/${repo}`,
-      prNumber,
-      commentId,
+      `${params.owner}/${params.repo}`,
+      params.pullNumber,
+      params.commentId,
     );
 
     // Create a reply comment with reference to the original
-    const replyComment = `> ${originalNote.body}\n\n${comment}`;
+    const replyComment = `> ${originalNote.body}\n\n${params.comment}`;
     await this.client.MergeRequestNotes.create(
-      `${owner}/${repo}`,
-      prNumber,
+      `${params.owner}/${params.repo}`,
+      params.pullNumber,
       replyComment,
     );
   }
 
   async replyToReviewComment(
-    owner: string,
-    repo: string,
-    prNumber: number,
-    threadId: string,
-    comment: string,
+    params: ReplyToReviewCommentParams,
   ): Promise<void> {
     // GitLab doesn't have a direct review comment API
     // We'll create a new comment with a reference to the thread
-    const replyComment = `> Thread ${threadId}\n\n${comment}`;
+    const replyComment = `> Thread ${params.threadId}\n\n${params.comment}`;
     await this.client.MergeRequestNotes.create(
-      `${owner}/${repo}`,
-      prNumber,
+      `${params.owner}/${params.repo}`,
+      params.pullNumber,
       replyComment,
     );
   }
@@ -86,17 +91,12 @@ export class GitLabService implements IGitPlatformService {
     return process.env.CI_COMMIT_MESSAGE || '';
   }
 
-  async getFileContent(
-    owner: string,
-    repo: string,
-    filePath: string,
-    prNumber: number,
-  ): Promise<string | null> {
+  async getFileContent(params: GetFileContentParams): Promise<string | null> {
     try {
       // Get the MR details to get the source branch
       const mr = await this.client.MergeRequests.show(
-        `${owner}/${repo}`,
-        prNumber,
+        `${params.owner}/${params.repo}`,
+        params.pullNumber,
       );
 
       // Ensure source_branch is a string
@@ -107,8 +107,8 @@ export class GitLabService implements IGitPlatformService {
 
       // Get the file content from the MR's source branch
       const file = await this.client.RepositoryFiles.show(
-        `${owner}/${repo}`,
-        filePath,
+        `${params.owner}/${params.repo}`,
+        params.filePath,
         sourceBranch,
       );
 
