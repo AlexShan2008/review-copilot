@@ -32,7 +32,7 @@ export class GitHubService implements IGitPlatformService {
   async createReviewComment({
     owner,
     repo,
-    prNumber,
+    pullNumber: prNumber,
     body,
     commitId,
     path,
@@ -60,7 +60,7 @@ export class GitHubService implements IGitPlatformService {
   async replyToComment(
     owner: string,
     repo: string,
-    prNumber: number,
+    pullNumber: number,
     commentId: number,
     comment: string,
   ): Promise<void> {
@@ -76,7 +76,7 @@ export class GitHubService implements IGitPlatformService {
     await this.client.issues.createComment({
       owner,
       repo,
-      issue_number: prNumber,
+      issue_number: pullNumber,
       body: replyComment,
     });
   }
@@ -84,14 +84,14 @@ export class GitHubService implements IGitPlatformService {
   async replyToReviewComment(
     owner: string,
     repo: string,
-    prNumber: number,
+    pullNumber: number,
     threadId: string,
     comment: string,
   ): Promise<void> {
     await this.client.pulls.createReplyForReviewComment({
       owner,
       repo,
-      pull_number: prNumber,
+      pull_number: pullNumber,
       comment_id: parseInt(threadId, 10),
       body: comment,
     });
@@ -108,7 +108,7 @@ export class GitHubService implements IGitPlatformService {
           return {
             owner: eventData.repository.owner.login,
             repo: eventData.repository.name,
-            prNumber: eventData.pull_request.number,
+            pullNumber: eventData.pull_request.number,
             platform: 'github',
           };
         }
@@ -118,13 +118,13 @@ export class GitHubService implements IGitPlatformService {
     }
 
     const [owner, repo] = (process.env.GITHUB_REPOSITORY || '').split('/');
-    const prNumber = parseInt(process.env.GITHUB_EVENT_NUMBER || '', 10);
+    const pullNumber = parseInt(process.env.GITHUB_EVENT_NUMBER || '', 10);
 
-    if (owner && repo && !isNaN(prNumber)) {
+    if (owner && repo && !isNaN(pullNumber)) {
       return {
         owner,
         repo,
-        prNumber,
+        pullNumber,
         platform: 'github',
       };
     }

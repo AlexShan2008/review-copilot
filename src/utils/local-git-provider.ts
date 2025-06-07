@@ -1,6 +1,6 @@
 import simpleGit, { SimpleGit } from 'simple-git';
 import { execCommand } from './exec-command';
-import { VcsProvider, CommitReviewInfo } from './git-service.interface';
+import { VcsProvider, PullRequestReviewInfo } from './git-service.interface';
 
 export class LocalGitProvider implements VcsProvider {
   async getCurrentBranchName(): Promise<string> {
@@ -8,10 +8,12 @@ export class LocalGitProvider implements VcsProvider {
     return result.stdout.trim();
   }
 
-  async getPullRequestFiles(baseBranch = 'main'): Promise<CommitReviewInfo[]> {
+  async getPullRequestFiles(
+    baseBranch = 'main',
+  ): Promise<PullRequestReviewInfo[]> {
     try {
       const git: SimpleGit = simpleGit();
-      const commits: CommitReviewInfo[] = [];
+      const commits: PullRequestReviewInfo[] = [];
       const currentBranch = await this.getCurrentBranchName();
       const logResult = await git.log({
         from: baseBranch,
@@ -64,10 +66,10 @@ export class LocalGitProvider implements VcsProvider {
 
   async getPullRequestCommits(
     baseBranch = 'main',
-  ): Promise<CommitReviewInfo[]> {
+  ): Promise<PullRequestReviewInfo[]> {
     try {
       const git: SimpleGit = simpleGit();
-      const commits: CommitReviewInfo[] = [];
+      const commits: PullRequestReviewInfo[] = [];
       const currentBranch = await this.getCurrentBranchName();
       const logResult = await git.log({
         from: baseBranch,

@@ -2,20 +2,16 @@ import { Octokit } from '@octokit/rest';
 import chalk from 'chalk';
 import fs from 'fs';
 import path from 'path';
-import { VcsProvider, CommitReviewInfo } from './git-service.interface';
+import { VcsProvider, PullRequestReviewInfo } from './git-service.interface';
 
-interface GitHubPRInfo {
-  owner: string;
-  repo: string;
-  pull_number: number;
-}
+type GetPullParams = Parameters<Octokit['pulls']['get']>[0];
 
 export class GithubProvider implements VcsProvider {
   // Cache for PR commits to avoid redundant API calls, with expiration
   private cachedCommits: { data: any[]; timestamp: number } | null = null;
   private CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
-  private async getPRInfo(): Promise<GitHubPRInfo | null> {
+  private async getPRInfo(): Promise<GetPullParams> {
     const token = process.env.GITHUB_TOKEN;
     if (!token) {
       throw new Error('Missing GITHUB_TOKEN');
@@ -73,29 +69,26 @@ export class GithubProvider implements VcsProvider {
     return '';
   }
 
-  async getPullRequestCommits(
-    baseBranch = 'main',
-  ): Promise<CommitReviewInfo[]> {
-    try {
-      const commits = await this.getCommits();
-      // For commit message review, we only need basic commit info without files
-      return commits.map((commit) => ({
-        hash: commit.sha,
-        date: commit.commit.author?.date || '',
-        message: commit.commit.message,
-        author: commit.commit.author?.name || '',
-        files: [], // Empty files array as we don't need file changes for message review
-      }));
-    } catch (error) {
-      console.error(
-        chalk.red('Error getting commits for message review:'),
-        error,
-      );
-      throw new Error('Failed to fetch GitHub commits for message review');
-    }
-  }
+  // async getPullRequestCommits(): Promise<CommitReviewInfo> {
 
-  async getPullRequestFiles(baseBranch = 'main'): Promise<CommitReviewInfo[]> {
+  //     const commits = await this.getCommits();
+  //     // For commit message review, we only need basic commit info without files
+  //      = commits.map((commit) => ({
+  //       hash: commit.sha,
+  //       date: commit.commit.author?.date || '',
+  //       message: commit.commit.message,
+  //       author: commit.commit.author?.name || '',
+  //       files: [], // Empty files array as we don't need file changes for message review
+  //     }));
+
+  //     const commitInfo = {
+
+  //     }
+
+  //   return commitInfo;
+  // }
+
+  async getPullRequestFiles(): Promise<PullRequestReviewInfo> {
     try {
       const prInfo = await this.getPRInfo();
       if (!prInfo) throw new Error('Failed to get PR info');
@@ -103,28 +96,24 @@ export class GithubProvider implements VcsProvider {
       const octokit = this.getOctokit();
 
       // Get PR details
-      const { data: pullRequest } = await octokit.pulls.get({
-        ...prInfo,
-      });
+      const { data: pullRequest } = await octokit.pulls.get(prInfo);
 
       // Get all file changes in the PR
-      const { data: files } = await octokit.pulls.listFiles({
-        ...prInfo,
-      });
+      const { data: files } = await octokit.pulls.listFiles(prInfo);
 
       // For code review, we only need the final state of changes
-      const commitInfo: CommitReviewInfo = {
+      const commitInfo: PullRequestReviewInfo = {
         hash: pullRequest.head.sha,
         date: pullRequest.updated_at,
         message: pullRequest.title,
         author: pullRequest.user?.login || '',
         files: files.map((file) => ({
-          file: file.filename,
+          filename: file.filename,
           changes: file.patch || '',
         })),
       };
 
-      return [commitInfo];
+      return commitInfo;
     } catch (error) {
       console.error(
         chalk.red('Error getting PR changes for code review:'),

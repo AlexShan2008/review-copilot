@@ -79,7 +79,7 @@ export async function selectiveReviewCommand(
       fullFileContent: fileContent, // Pass the entire file content
       selectedCodeContent,
       triggerComment: options.comment,
-      prNumber: prDetails.prNumber,
+      pullNumber: prDetails.prNumber,
       owner: prDetails.owner,
       repo: prDetails.repo,
       commentId: options.commentId,

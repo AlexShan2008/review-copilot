@@ -11,7 +11,7 @@ export interface SelectiveReviewContext {
   // The comment that triggered the review
   triggerComment: string;
   // The PR number
-  prNumber: number;
+  pullNumber: number;
   // The repository owner
   owner: string;
   // The repository name

@@ -1,26 +1,26 @@
-import {
-  VcsProvider,
-  GitChange,
-  CommitReviewInfo,
-} from './git-service.interface';
+import { VcsProvider, PullRequestReviewInfo } from './git-service.interface';
 
 export class GitlabProvider implements VcsProvider {
-  async getChanges(): Promise<GitChange[]> {
-    // TODO: Implement GitLab-specific logic
-    return [];
-  }
   async getCurrentBranchName(): Promise<string> {
     // TODO: Implement GitLab-specific logic
     return '';
   }
-  async getPullRequestFiles(baseBranch = 'main'): Promise<CommitReviewInfo[]> {
+  async getPullRequestFiles(): Promise<PullRequestReviewInfo> {
     // TODO: Implement GitLab-specific logic
-    return [];
+    return {
+      hash: '',
+      date: '',
+      message: '',
+      author: '',
+    };
   }
-  async getPullRequestCommits(
-    baseBranch = 'main',
-  ): Promise<CommitReviewInfo[]> {
+  async getPullRequestCommits(): Promise<PullRequestReviewInfo> {
     // TODO: Implement GitLab-specific logic for getting commit messages
-    return [];
+    return {
+      hash: '',
+      date: '',
+      message: '',
+      author: '',
+    };
   }
 }
