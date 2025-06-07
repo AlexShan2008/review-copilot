@@ -1,4 +1,4 @@
-import { ParsedDiff, DiffHunk, DiffLine } from '../types';
+import { ParsedDiff, DiffHunk, DiffLine } from '../providers/provider.types';
 
 /**
  * Parse a unified diff string into structured data

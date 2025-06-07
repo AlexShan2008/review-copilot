@@ -53,7 +53,7 @@ export interface GetFileContentParams {
 }
 
 export interface IGitPlatformService {
-  getPRDetails(): Promise<GitPlatformDetails | null>;
+  getPRDetails(): Promise<GitPlatformDetails | undefined>;
   createIssueComment(params: createIssueComment): Promise<void>;
   replyToComment(params: ReplyToCommentParams): Promise<void>;
   createReviewComment(params: CreateReviewCommentParams): Promise<void>;

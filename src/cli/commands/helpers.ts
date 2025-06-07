@@ -1,12 +1,13 @@
 import chalk from 'chalk';
-import { CodeReviewResult, Config, IAIProvider } from '../../types';
+import { ReviewConfig, IAIProvider } from '../../types/review.types';
 import ora from 'ora';
 import EnvironmentHelpers from '../../utils/environment-helpers';
 import {
   GitPlatformDetails,
   IGitPlatformService,
-} from '../../services/git-platform.interface';
+} from '../../services/services.types';
 import { VcsProvider } from '../../utils/git-service.interface';
+import { CodeReviewResult } from '../../providers/provider.types';
 
 export interface ReviewResults {
   branchName?: CodeReviewResult[];
@@ -16,10 +17,10 @@ export interface ReviewResults {
 
 export interface ReviewContext {
   aiProvider: IAIProvider;
-  config: Config;
+  config: ReviewConfig;
   vcs: VcsProvider;
-  gitService: IGitPlatformService;
-  prDetails: GitPlatformDetails;
+  gitService?: IGitPlatformService;
+  prDetails?: GitPlatformDetails;
   spinner: ora.Ora;
 }
 
@@ -186,7 +187,7 @@ export function printReviewResultsToTerminal(
 
   console.log('\n📝 Review Results:\n');
 
-  results.forEach((result, index) => {
-    printSingleReviewResult(result, index + 1);
+  results.forEach((result) => {
+    printSingleReviewResult(result);
   });
 }

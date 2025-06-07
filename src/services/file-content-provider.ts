@@ -1,14 +1,10 @@
 import fs from 'fs';
-import { IGitPlatformService } from './git-platform.interface';
+import { GitPlatformDetails, IGitPlatformService } from './services.types';
 
 export interface FileContentProvider {
   getFileContent(
     filePath: string,
-    context?: {
-      owner?: string;
-      repo?: string;
-      prNumber?: number;
-    },
+    context?: GitPlatformDetails,
   ): Promise<string | null>;
 }
 
@@ -28,24 +24,20 @@ export class GitPlatformFileContentProvider implements FileContentProvider {
 
   async getFileContent(
     filePath: string,
-    context?: {
-      owner?: string;
-      repo?: string;
-      prNumber?: number;
-    },
+    context?: GitPlatformDetails,
   ): Promise<string | null> {
-    if (!context?.owner || !context?.repo || !context?.prNumber) {
+    if (!context?.owner || !context?.repo || !context?.pullNumber) {
       throw new Error(
         'Missing required context for Git platform file content retrieval',
       );
     }
 
-    return this.gitService.getFileContent(
-      context.owner,
-      context.repo,
+    return this.gitService.getFileContent({
+      owner: context.owner,
+      repo: context.repo,
       filePath,
-      context.prNumber,
-    );
+      pullNumber: context.pullNumber,
+    });
   }
 }
 

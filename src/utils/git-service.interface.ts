@@ -13,5 +13,5 @@ export interface PullRequestReviewInfo {
 export interface VcsProvider {
   getCurrentBranchName(): Promise<string>;
   getPullRequestFiles(): Promise<PullRequestReviewInfo>;
-  getPullRequestCommits(): Promise<PullRequestReviewInfo>;
+  getPullRequestCommits(): Promise<PullRequestReviewInfo[]>;
 }

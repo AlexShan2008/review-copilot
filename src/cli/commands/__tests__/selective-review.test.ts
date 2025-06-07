@@ -60,7 +60,7 @@ describe('selectiveReviewCommand', () => {
     gitServiceMock.getPRDetails.mockResolvedValue({
       owner: 'alex',
       repo: 'repo',
-      prNumber: 1,
+      pullNumber: 1,
     });
     fileContentProviderMock.getFileContent.mockResolvedValue(null);
     const result = await selectiveReviewCommand(baseOptions);
@@ -71,7 +71,7 @@ describe('selectiveReviewCommand', () => {
     gitServiceMock.getPRDetails.mockResolvedValue({
       owner: 'alex',
       repo: 'repo',
-      prNumber: 1,
+      pullNumber: 1,
     });
     fileContentProviderMock.getFileContent.mockResolvedValue('line1\nline2');
     const result = await selectiveReviewCommand({
@@ -86,7 +86,7 @@ describe('selectiveReviewCommand', () => {
     gitServiceMock.getPRDetails.mockResolvedValue({
       owner: 'alex',
       repo: 'repo',
-      prNumber: 1,
+      pullNumber: 1,
     });
     fileContentProviderMock.getFileContent.mockResolvedValue('line1\nline2');
     reviewServiceMock.processSelectiveReview.mockResolvedValue({
@@ -105,7 +105,7 @@ describe('selectiveReviewCommand', () => {
     gitServiceMock.getPRDetails.mockResolvedValue({
       owner: 'alex',
       repo: 'repo',
-      prNumber: 1,
+      pullNumber: 1,
     });
     fileContentProviderMock.getFileContent.mockResolvedValue('line1\nline2');
     reviewServiceMock.processSelectiveReview.mockResolvedValue({

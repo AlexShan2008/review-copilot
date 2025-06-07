@@ -1,9 +1,4 @@
-import {
-  CodeReviewSuggestion,
-  LineSpecificSuggestion,
-  ParsedDiff,
-  IAIProvider,
-} from '../types';
+import { IAIProvider } from '../types/review.types';
 import {
   parseDiff,
   getReviewableLines,
@@ -11,10 +6,16 @@ import {
   getDiffContext,
   isLineCommentable,
 } from '../utils/diff-parser';
+import { PullRequestFile } from '../utils/git-service.interface';
 import {
   IGitPlatformService,
   CreateReviewCommentParams,
-} from './git-platform.interface';
+} from './services.types';
+import {
+  CodeReviewSuggestion,
+  LineSpecificSuggestion,
+  ParsedDiff,
+} from '../providers/provider.types';
 
 export interface FileReviewContext {
   filePath: string;
@@ -23,7 +24,7 @@ export interface FileReviewContext {
   commitId: string;
   owner: string;
   repo: string;
-  prNumber: number;
+  pullNumber: number;
 }
 
 export class LineSpecificReviewService {
@@ -36,14 +37,11 @@ export class LineSpecificReviewService {
    * Perform line-specific code review and post comments directly to the PR
    */
   async performLineSpecificReview(
-    files: Array<{
-      file: string;
-      changes: string;
-    }>,
+    files: PullRequestFile[],
     commitId: string,
     owner: string,
     repo: string,
-    prNumber: number,
+    pullNumber: number,
     reviewPrompt: string,
   ): Promise<{
     generalSuggestions: CodeReviewSuggestion[];
@@ -59,15 +57,15 @@ export class LineSpecificReviewService {
     for (const file of files) {
       if (!file.changes) continue;
 
-      const parsedDiff = parseDiff(file.changes, file.file);
+      const parsedDiff = parseDiff(file.changes, file.filename);
       fileContexts.push({
-        filePath: file.file,
+        filePath: file.filename,
         diffContent: file.changes,
         parsedDiff,
         commitId,
         owner,
         repo,
-        prNumber,
+        pullNumber,
       });
     }
 
@@ -112,7 +110,7 @@ export class LineSpecificReviewService {
     for (const suggestion of lineSpecific) {
       try {
         const fileContext = fileContexts.find(
-          (ctx) => ctx.filePath === suggestion.file,
+          (ctx) => ctx.filePath === suggestion.filename,
         );
         if (!fileContext) continue;
 
@@ -122,7 +120,7 @@ export class LineSpecificReviewService {
         );
         if (position === null) {
           console.warn(
-            `Cannot find diff position for line ${suggestion.line} in ${suggestion.file}`,
+            `Cannot find diff position for line ${suggestion.line} in ${suggestion.filename}`,
           );
           continue;
         }
@@ -130,24 +128,23 @@ export class LineSpecificReviewService {
         const commentParams: CreateReviewCommentParams = {
           owner,
           repo,
-          pullNumber: prNumber,
+          pullNumber: pullNumber,
           body: suggestion.message,
           commitId,
-          path: suggestion.file,
+          path: suggestion.filename,
           line: suggestion.line,
           side: 'RIGHT',
-          position,
         };
 
         await this.gitPlatformService.createReviewComment(commentParams);
         commentsPosted++;
 
         console.log(
-          `✅ Posted comment on ${suggestion.file}:${suggestion.line}`,
+          `✅ Posted comment on ${suggestion.filename}:${suggestion.line}`,
         );
       } catch (error) {
         console.error(
-          `❌ Failed to post comment on ${suggestion.file}:${suggestion.line}:`,
+          `❌ Failed to post comment on ${suggestion.filename}:${suggestion.line}:`,
           error,
         );
       }
@@ -270,7 +267,7 @@ ${ctx.diffContent}
         ) {
           suggestions.push({
             message: currentSuggestion,
-            file: currentFile,
+            filename: currentFile,
             line: currentLine,
             severity: currentSeverity,
             reviewType: 'line-specific',

@@ -5,8 +5,17 @@ import {
   IGitPlatformService,
   GitPlatformDetails,
   createIssueComment,
-} from './git-platform.interface';
+  GetFileContentParams,
+  ReplyToReviewCommentParams,
+  ReplyToCommentParams,
+} from './services.types';
 import { execSync } from 'child_process';
+import ora from 'ora';
+import chalk from 'chalk';
+import { ConfigManager } from '../config/config-manager';
+import { GitPlatformFactory } from './git-platform-factory';
+import { SelectiveReviewService } from './selective-review-service';
+import { SelectiveReviewContext } from '../types/selective-review.types';
 
 export class GitHubService implements IGitPlatformService {
   private client: Octokit;
@@ -32,72 +41,64 @@ export class GitHubService implements IGitPlatformService {
   async createReviewComment({
     owner,
     repo,
-    pullNumber: prNumber,
+    pullNumber: pullNumber,
     body,
     commitId,
     path,
-    position,
     line,
     side,
     startLine,
     startSide,
+    inReplyTo,
+    subjectType,
   }: CreateReviewCommentParams): Promise<void> {
     await this.client.pulls.createReviewComment({
       owner,
       repo,
-      pull_number: prNumber,
+      pull_number: pullNumber,
       body,
       commit_id: commitId,
       path,
-      position,
       line,
       side,
       start_line: startLine,
       start_side: startSide,
+      in_reply_to: inReplyTo,
+      subject_type: subjectType,
     });
   }
 
-  async replyToComment(
-    owner: string,
-    repo: string,
-    pullNumber: number,
-    commentId: number,
-    comment: string,
-  ): Promise<void> {
+  async replyToComment(params: ReplyToCommentParams): Promise<void> {
     // GitHub doesn't have a direct reply-to-comment API
     // Instead, we'll create a new comment with a reference to the original
     const { data: originalComment } = await this.client.issues.getComment({
-      owner,
-      repo,
-      comment_id: commentId,
+      owner: params.owner,
+      repo: params.repo,
+      comment_id: params.commentId,
     });
 
-    const replyComment = `> ${originalComment.body}\n\n${comment}`;
+    const replyComment = `> ${originalComment.body}\n\n${params.comment}`;
     await this.client.issues.createComment({
-      owner,
-      repo,
-      issue_number: pullNumber,
+      owner: params.owner,
+      repo: params.repo,
+      issue_number: params.pullNumber,
       body: replyComment,
     });
   }
 
   async replyToReviewComment(
-    owner: string,
-    repo: string,
-    pullNumber: number,
-    threadId: string,
-    comment: string,
+    params: ReplyToReviewCommentParams,
   ): Promise<void> {
     await this.client.pulls.createReplyForReviewComment({
-      owner,
-      repo,
-      pull_number: pullNumber,
-      comment_id: parseInt(threadId, 10),
-      body: comment,
+      owner: params.owner,
+      repo: params.repo,
+      pull_number: params.pullNumber,
+      comment_id: parseInt(params.threadId, 10),
+      body: params.comment,
     });
   }
 
-  async getPRDetails(): Promise<GitPlatformDetails | null> {
+  async getPRDetails(): Promise<GitPlatformDetails | undefined> {
     if (process.env.GITHUB_EVENT_PATH) {
       try {
         const eventData = JSON.parse(
@@ -110,6 +111,8 @@ export class GitHubService implements IGitPlatformService {
             repo: eventData.repository.name,
             pullNumber: eventData.pull_request.number,
             platform: 'github',
+            commitId: eventData.pull_request.head.sha,
+            path: eventData.pull_request.head.path,
           };
         }
       } catch (error) {
@@ -126,10 +129,12 @@ export class GitHubService implements IGitPlatformService {
         repo,
         pullNumber,
         platform: 'github',
+        commitId: '',
+        path: '',
       };
     }
 
-    return null;
+    return undefined;
   }
 
   async getCurrentBranch(): Promise<string> {
@@ -140,25 +145,20 @@ export class GitHubService implements IGitPlatformService {
     return execSync('git log -1 --pretty=%B').toString().trim();
   }
 
-  async getFileContent(
-    owner: string,
-    repo: string,
-    filePath: string,
-    prNumber: number,
-  ): Promise<string | null> {
+  async getFileContent(params: GetFileContentParams): Promise<string | null> {
     try {
       // Get the PR details to get the head SHA
       const { data: pullRequest } = await this.client.pulls.get({
-        owner,
-        repo,
-        pull_number: prNumber,
+        owner: params.owner,
+        repo: params.repo,
+        pull_number: params.pullNumber,
       });
 
       // Get the file content from the PR's head branch
       const { data: fileData } = await this.client.repos.getContent({
-        owner,
-        repo,
-        path: filePath,
+        owner: params.owner,
+        repo: params.repo,
+        path: params.filePath,
         ref: pullRequest.head.sha,
       });
 

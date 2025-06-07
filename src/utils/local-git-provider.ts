@@ -1,6 +1,10 @@
 import simpleGit, { SimpleGit } from 'simple-git';
 import { execCommand } from './exec-command';
-import { VcsProvider, PullRequestReviewInfo } from './git-service.interface';
+import {
+  VcsProvider,
+  PullRequestReviewInfo,
+  PullRequestFile,
+} from './git-service.interface';
 
 export class LocalGitProvider implements VcsProvider {
   async getCurrentBranchName(): Promise<string> {
@@ -8,15 +12,13 @@ export class LocalGitProvider implements VcsProvider {
     return result.stdout.trim();
   }
 
-  async getPullRequestFiles(
-    baseBranch = 'main',
-  ): Promise<PullRequestReviewInfo[]> {
+  async getPullRequestFiles(): Promise<PullRequestReviewInfo> {
     try {
       const git: SimpleGit = simpleGit();
-      const commits: PullRequestReviewInfo[] = [];
       const currentBranch = await this.getCurrentBranchName();
+      const commits: PullRequestReviewInfo[] = [];
       const logResult = await git.log({
-        from: baseBranch,
+        from: 'main',
         to: currentBranch,
         symmetric: false,
       });
@@ -53,37 +55,48 @@ export class LocalGitProvider implements VcsProvider {
           date: commit.date,
           message: commit.message,
           author: commit.author_name,
-          files: fileChanges,
+          files: fileChanges.map((file) => ({
+            filename: file.file,
+            changes: file.changes,
+          })),
         });
       }
-      return commits;
+
+      const reviewInfo: PullRequestReviewInfo = {
+        hash: commits[0].hash,
+        date: commits[0].date,
+        message: commits[0].message,
+        author: commits[0].author,
+        files: commits
+          .map((commit) => commit.files)
+          .flat()
+          .filter((file): file is PullRequestFile => file !== undefined),
+      };
+
+      return reviewInfo;
     } catch (error) {
       // eslint-disable-next-line no-console
       console.error('Error getting commits for review:', error);
-      return [];
+      throw new Error('Failed to fetch GitHub PR changes for code review');
     }
   }
 
-  async getPullRequestCommits(
-    baseBranch = 'main',
-  ): Promise<PullRequestReviewInfo[]> {
+  async getPullRequestCommits(): Promise<PullRequestReviewInfo[]> {
     try {
       const git: SimpleGit = simpleGit();
-      const commits: PullRequestReviewInfo[] = [];
       const currentBranch = await this.getCurrentBranchName();
       const logResult = await git.log({
-        from: baseBranch,
+        from: 'main',
         to: currentBranch,
         symmetric: false,
       });
 
-      // For commit message review, we only need basic commit info without files
       return logResult.all.map((commit) => ({
         hash: commit.hash,
         date: commit.date,
         message: commit.message,
         author: commit.author_name,
-        files: [], // Empty files array as we don't need file changes for message review
+        files: [],
       }));
     } catch (error) {
       console.error('Error getting commits for message review:', error);

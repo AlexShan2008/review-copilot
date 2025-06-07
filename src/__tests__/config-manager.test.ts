@@ -1,24 +1,18 @@
 import { ConfigManager } from '../config/config-manager';
 import { readFile } from 'fs/promises';
-import { Config } from '../types';
+import { ProviderFactoryConfig } from '../providers/provider.types';
 
 jest.mock('fs/promises');
 
 describe('ConfigManager', () => {
   let configManager: ConfigManager;
-  const mockConfig = {
+  const mockConfig: ProviderFactoryConfig = {
     providers: {
       openai: {
         enabled: true,
         apiKey: 'test-key',
         model: 'gpt-4o-mini',
         baseURL: 'https://api.openai.com/v1',
-      },
-      deepseek: {
-        enabled: false,
-        apiKey: 'test-key-2',
-        model: 'deepseek-chat',
-        baseURL: 'https://api.deepseek.com/v1',
       },
     },
     triggers: [{ on: 'pull_request' }, { on: 'merge_request' }],
@@ -47,23 +41,26 @@ describe('ConfigManager', () => {
     ],
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.resetAllMocks();
-    configManager = ConfigManager.getInstance();
     (readFile as jest.Mock).mockResolvedValue(JSON.stringify(mockConfig));
+    // Reset the singleton instance before each test
+    (ConfigManager as any).instance = undefined;
+    configManager = await ConfigManager.getInstance();
   });
 
-  it('should be a singleton', () => {
-    const instance1 = ConfigManager.getInstance();
-    const instance2 = ConfigManager.getInstance();
+  it('should be a singleton', async () => {
+    const instance1 = await ConfigManager.getInstance();
+    const instance2 = await ConfigManager.getInstance();
     expect(instance1).toBe(instance2);
   });
 
   it('should load and validate config', async () => {
-    const config = await configManager.loadConfig();
+    const config = configManager.getConfig();
     expect(config).toBeDefined();
-    expect(config.providers.openai.enabled).toBe(true);
-    expect(config.providers.deepseek.enabled).toBe(false);
+    const openaiConfig = config.providers.openai;
+    expect(openaiConfig).toBeDefined();
+    expect(openaiConfig?.apiKey).toBe('test-key');
   });
 
   it('should replace environment variables', async () => {
@@ -71,6 +68,7 @@ describe('ConfigManager', () => {
     const configWithEnv = {
       ...mockConfig,
       providers: {
+        ...mockConfig.providers,
         openai: {
           ...mockConfig.providers.openai,
           apiKey: '${TEST_API_KEY}',
@@ -78,22 +76,30 @@ describe('ConfigManager', () => {
       },
     };
     (readFile as jest.Mock).mockResolvedValue(JSON.stringify(configWithEnv));
-
-    const config = await configManager.loadConfig();
-    expect(config.providers.openai.apiKey).toBe('env-key');
+    // Reset the singleton instance
+    (ConfigManager as any).instance = undefined;
+    const newConfigManager = await ConfigManager.getInstance();
+    const config = newConfigManager.getConfig();
+    const openaiConfig = config.providers.openai;
+    expect(openaiConfig).toBeDefined();
+    expect(openaiConfig?.apiKey).toBe('env-key');
   });
 
   it('should throw error for invalid config', async () => {
     const invalidConfig = {
       ...mockConfig,
-      providers: undefined,
+      providers: undefined, // Remove required providers field
     };
     (readFile as jest.Mock).mockResolvedValue(JSON.stringify(invalidConfig));
-
-    await expect(configManager.loadConfig()).rejects.toThrow();
+    // Reset the singleton instance
+    (ConfigManager as any).instance = undefined;
+    await expect(ConfigManager.getInstance()).rejects.toThrow(
+      'Failed to load config',
+    );
   });
 
-  it('should throw error when getting config before loading', () => {
+  it('should throw error when getting config before loading', async () => {
+    // Create a new instance without loading config
     const newInstance = new (ConfigManager as any)();
     expect(() => newInstance.getConfig()).toThrow('Config not loaded');
   });
