@@ -22,7 +22,7 @@ export class GitLabService implements IGitPlatformService {
     return {
       owner: process.env.CI_PROJECT_NAMESPACE || '',
       repo: process.env.CI_PROJECT_NAME || '',
-      prNumber: parseInt(mrIid, 10),
+      pullNumber: parseInt(mrIid, 10),
       platform: 'gitlab',
     };
   }
@@ -43,7 +43,7 @@ export class GitLabService implements IGitPlatformService {
   async createReviewComment(params: CreateReviewCommentParams): Promise<void> {
     await this.client.MergeRequestNotes.create(
       `${params.owner}/${params.repo}`,
-      params.prNumber,
+      params.pullNumber,
       params.body,
     );
   }
@@ -51,14 +51,14 @@ export class GitLabService implements IGitPlatformService {
   async replyToComment(
     owner: string,
     repo: string,
-    prNumber: number,
+    pullNumber: number,
     commentId: number,
     comment: string,
   ): Promise<void> {
     // Get the original comment
     const originalNote = await this.client.MergeRequestNotes.show(
       `${owner}/${repo}`,
-      prNumber,
+      pullNumber,
       commentId,
     );
 
@@ -66,7 +66,7 @@ export class GitLabService implements IGitPlatformService {
     const replyComment = `> ${originalNote.body}\n\n${comment}`;
     await this.client.MergeRequestNotes.create(
       `${owner}/${repo}`,
-      prNumber,
+      pullNumber,
       replyComment,
     );
   }
@@ -74,7 +74,7 @@ export class GitLabService implements IGitPlatformService {
   async replyToReviewComment(
     owner: string,
     repo: string,
-    prNumber: number,
+    pullNumber: number,
     threadId: string,
     comment: string,
   ): Promise<void> {
@@ -83,7 +83,7 @@ export class GitLabService implements IGitPlatformService {
     const replyComment = `> Thread ${threadId}\n\n${comment}`;
     await this.client.MergeRequestNotes.create(
       `${owner}/${repo}`,
-      prNumber,
+      pullNumber,
       replyComment,
     );
   }
@@ -100,13 +100,13 @@ export class GitLabService implements IGitPlatformService {
     owner: string,
     repo: string,
     filePath: string,
-    prNumber: number,
+    pullNumber: number,
   ): Promise<string | null> {
     try {
       // Get the MR details to get the source branch
       const mr = await this.client.MergeRequests.show(
         `${owner}/${repo}`,
-        prNumber,
+        pullNumber,
       );
 
       // Ensure source_branch is a string

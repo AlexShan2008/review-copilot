@@ -100,8 +100,6 @@ export class LineSpecificReviewService {
       allSuggestions.push(...parsedSuggestions);
     }
 
-    console.log('allSuggestions========', allSuggestions);
-
     // Separate general and line-specific suggestions
     const generalSuggestions = allSuggestions.filter(
       (s) => s.reviewType === 'general',
@@ -132,8 +130,8 @@ export class LineSpecificReviewService {
         const commentParams: CreateReviewCommentParams = {
           owner,
           repo,
-          prNumber,
-          body: this.formatReviewComment(suggestion),
+          pullNumber: prNumber,
+          body: suggestion.message,
           commitId,
           path: suggestion.file,
           line: suggestion.line,

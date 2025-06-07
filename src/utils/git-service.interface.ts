@@ -1,21 +1,17 @@
-export interface GitChange {
-  file: string;
-  content: string;
+export interface PullRequestFile {
+  filename: string;
+  changes: string;
 }
-
-export interface CommitReviewInfo {
+export interface PullRequestReviewInfo {
   hash: string;
   date: string;
   message: string;
   author: string;
-  files?: {
-    file: string;
-    changes: string;
-  }[];
+  files?: PullRequestFile[];
 }
 
 export interface VcsProvider {
   getCurrentBranchName(): Promise<string>;
-  getPullRequestFiles(baseBranch?: string): Promise<CommitReviewInfo[]>;
-  getPullRequestCommits(baseBranch?: string): Promise<CommitReviewInfo[]>;
+  getPullRequestFiles(): Promise<PullRequestReviewInfo>;
+  getPullRequestCommits(): Promise<PullRequestReviewInfo>;
 }

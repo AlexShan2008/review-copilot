@@ -60,7 +60,7 @@ export interface Config {
 
 export interface CodeReviewSuggestion {
   message: string;
-  file?: string;
+  filename?: string;
   line?: number;
   severity?: 'info' | 'warning' | 'error';
   side?: 'LEFT' | 'RIGHT';
@@ -121,7 +121,7 @@ export interface ParsedDiff {
 
 export interface LineSpecificSuggestion extends CodeReviewSuggestion {
   reviewType: 'line-specific';
-  file: string;
+  filename: string;
   line: number;
   commitId: string;
   position?: number;

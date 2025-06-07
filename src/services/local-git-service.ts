@@ -36,7 +36,7 @@ export class LocalGitService implements IGitPlatformService {
       return {
         owner,
         repo,
-        prNumber: 1, // Dummy PR number for local development
+        pullNumber: 1, // Dummy PR number for local development
         platform: 'github', // Default to GitHub for local development
       };
     } catch (error) {
@@ -67,7 +67,7 @@ export class LocalGitService implements IGitPlatformService {
   async replyToComment(
     owner: string,
     repo: string,
-    prNumber: number,
+    pullNumber: number,
     commentId: number,
     comment: string,
   ): Promise<void> {
@@ -81,7 +81,7 @@ export class LocalGitService implements IGitPlatformService {
   async replyToReviewComment(
     owner: string,
     repo: string,
-    prNumber: number,
+    pullNumber: number,
     threadId: string,
     comment: string,
   ): Promise<void> {
@@ -104,7 +104,7 @@ export class LocalGitService implements IGitPlatformService {
     owner: string,
     repo: string,
     filePath: string,
-    prNumber: number,
+    pullNumber: number,
   ): Promise<string | null> {
     try {
       // In local development, read the file directly from the filesystem

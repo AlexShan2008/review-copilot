@@ -129,7 +129,7 @@ ${context.fullFileContent
         await gitService.replyToReviewComment(
           context.owner,
           context.repo,
-          context.prNumber,
+          context.pullNumber,
           context.threadId,
           comment,
         );
@@ -140,7 +140,7 @@ ${context.fullFileContent
         await gitService.replyToComment(
           context.owner,
           context.repo,
-          context.prNumber,
+          context.pullNumber,
           context.commentId,
           comment,
         );
@@ -153,7 +153,7 @@ ${context.fullFileContent
         await gitService.createIssueComment({
           owner: context.owner,
           repo: context.repo,
-          issue_number: context.prNumber,
+          issue_number: context.pullNumber,
           body: comment,
         });
         console.log('Successfully created new comment');

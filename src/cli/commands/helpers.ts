@@ -1,8 +1,12 @@
 import chalk from 'chalk';
-import { CodeReviewResult } from '../../types';
+import { CodeReviewResult, Config, IAIProvider } from '../../types';
 import ora from 'ora';
 import EnvironmentHelpers from '../../utils/environment-helpers';
-import { IGitPlatformService } from '../../services/git-platform.interface';
+import {
+  GitPlatformDetails,
+  IGitPlatformService,
+} from '../../services/git-platform.interface';
+import { VcsProvider } from '../../utils/git-service.interface';
 
 export interface ReviewResults {
   branchName?: CodeReviewResult[];
@@ -11,11 +15,11 @@ export interface ReviewResults {
 }
 
 export interface ReviewContext {
-  aiProvider: any;
-  config: any;
-  vcs: any;
-  gitService?: IGitPlatformService;
-  prDetails?: any;
+  aiProvider: IAIProvider;
+  config: Config;
+  vcs: VcsProvider;
+  gitService: IGitPlatformService;
+  prDetails: GitPlatformDetails;
   spinner: ora.Ora;
 }
 
@@ -24,10 +28,7 @@ export interface ReviewCommandOptions {
   baseBranch?: string;
 }
 
-export function printSingleReviewResult(
-  result: CodeReviewResult,
-  index: number,
-): void {
+export function printSingleReviewResult(result: CodeReviewResult): void {
   const hasIssues = result.suggestions.length > 0 || result.error !== undefined;
 
   if (!hasIssues && result.success) {
@@ -111,7 +112,7 @@ export async function outputToCIPlatform(
     await context.gitService.createIssueComment({
       owner: context.prDetails.owner,
       repo: context.prDetails.repo,
-      issue_number: context.prDetails.prNumber,
+      issue_number: context.prDetails.pullNumber,
       body,
     });
   }
@@ -122,7 +123,7 @@ export async function outputToCIPlatform(
     await context.gitService.createIssueComment({
       owner: context.prDetails.owner,
       repo: context.prDetails.repo,
-      issue_number: context.prDetails.prNumber,
+      issue_number: context.prDetails.pullNumber,
       body,
     });
   }
@@ -133,11 +134,10 @@ export async function outputToCIPlatform(
     await context.gitService.createReviewComment({
       owner: context.prDetails.owner,
       repo: context.prDetails.repo,
-      prNumber: context.prDetails.prNumber,
+      pullNumber: context.prDetails.pullNumber,
       body,
       commitId: context.prDetails.commitId,
       path: context.prDetails.path,
-      position: 1,
       line: 1,
       side: 'RIGHT',
       startLine: 1,
