@@ -1,4 +1,4 @@
-import { IGitPlatformService } from './git-platform.interface';
+import { IGitPlatformService } from './services.types';
 import { GitHubService } from './github-service';
 import { GitLabService } from './gitlab-service';
 import { LocalGitService } from './local-git-service';

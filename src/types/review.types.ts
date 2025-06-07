@@ -1,3 +1,6 @@
+import { ReviewLanguage } from '../constants/ai-messages';
+import { CodeReviewSuggestion, ParsedDiff } from '../providers/provider.types';
+
 export type AIProviderType = 'openai' | 'deepseek' | 'anthropic' | 'gemini';
 
 export interface AIProvider {
@@ -24,7 +27,7 @@ export interface CustomReviewPoint {
   prompt: string;
 }
 
-export interface Config {
+export interface ReviewConfig {
   ai: AIProvider;
   triggers: ReviewTrigger[];
   rules: {
@@ -54,14 +57,23 @@ export interface ReviewResult {
 export interface AIProviderConfig {
   apiKey: string;
   provider: AIProviderType;
-  baseURL?: string;
+  baseURL: string;
   model: string;
   defaultHeaders?: Record<string, string>;
   timeout?: number;
+  reviewLanguage?: ReviewLanguage;
 }
 
 export interface IAIProvider {
   review(prompt: string, content: string): Promise<string>;
+  reviewWithLineSpecificSuggestions?(
+    prompt: string,
+    content: string,
+    fileContext: Array<{
+      filePath: string;
+      parsedDiff: ParsedDiff;
+    }>,
+  ): Promise<CodeReviewSuggestion[]>;
 }
 
 export interface AIEnvConfig {

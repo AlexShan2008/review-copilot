@@ -1,5 +1,5 @@
 import { BaseProvider } from '../providers/base-provider';
-import { AIProviderConfig } from '../types';
+import { AIProviderConfig } from '../types/review.types';
 import OpenAI from 'openai';
 
 jest.mock('openai');
@@ -27,7 +27,7 @@ describe('BaseProvider', () => {
   });
 
   it('should initialize OpenAI client with config', () => {
-    const provider = new TestProvider(mockConfig);
+    new TestProvider(mockConfig);
     expect(OpenAI).toHaveBeenCalledWith({
       apiKey: mockConfig.apiKey,
       baseURL: mockConfig.baseURL,
@@ -37,11 +37,9 @@ describe('BaseProvider', () => {
   });
 
   it('should use default headers if not provided', () => {
-    const configWithoutHeaders = {
-      ...mockConfig,
-      defaultHeaders: undefined,
-    };
-    const provider = new TestProvider(configWithoutHeaders);
+    const configWithoutHeaders = { ...mockConfig };
+    delete configWithoutHeaders.defaultHeaders;
+    new TestProvider(configWithoutHeaders);
     expect(OpenAI).toHaveBeenCalledWith(
       expect.objectContaining({
         defaultHeaders: {
@@ -52,11 +50,9 @@ describe('BaseProvider', () => {
   });
 
   it('should use default timeout if not provided', () => {
-    const configWithoutTimeout = {
-      ...mockConfig,
-      timeout: undefined,
-    };
-    const provider = new TestProvider(configWithoutTimeout);
+    const configWithoutTimeout = { ...mockConfig };
+    delete configWithoutTimeout.timeout;
+    new TestProvider(configWithoutTimeout);
     expect(OpenAI).toHaveBeenCalledWith(
       expect.objectContaining({
         timeout: 60000,

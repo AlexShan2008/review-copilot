@@ -1,6 +1,6 @@
 import OpenAI from 'openai';
 import chalk from 'chalk';
-import type { AIProviderConfig, IAIProvider } from '../types';
+import type { AIProviderConfig, IAIProvider } from '../types/review.types';
 
 export abstract class BaseProvider implements IAIProvider {
   protected client: OpenAI;

@@ -8,6 +8,10 @@ import { GitHubService } from '../services/github-service';
 import { Octokit } from '@octokit/rest';
 import fs from 'fs';
 import child_process from 'child_process';
+import {
+  ReplyToReviewCommentParams,
+  ReplyToCommentParams,
+} from '../services/services.types';
 
 const OLD_ENV = process.env;
 
@@ -67,10 +71,17 @@ describe('GitHubService', () => {
   });
 
   it('should reply to a comment', async () => {
+    const params: ReplyToCommentParams = {
+      owner: 'owner',
+      repo: 'repo',
+      pullNumber: 1,
+      commentId: 123,
+      comment: 'reply',
+    };
     octokitMock.issues.getComment.mockResolvedValue({
       data: { body: 'original' },
     });
-    await service.replyToComment('owner', 'repo', 1, 2, 'reply');
+    await service.replyToComment(params);
     expect(octokitMock.issues.createComment).toHaveBeenCalledWith({
       owner: 'owner',
       repo: 'repo',
@@ -80,7 +91,14 @@ describe('GitHubService', () => {
   });
 
   it('should reply to a review comment', async () => {
-    await service.replyToReviewComment('owner', 'repo', 1, '2', 'review reply');
+    const params: ReplyToReviewCommentParams = {
+      owner: 'owner',
+      repo: 'repo',
+      pullNumber: 1,
+      threadId: '2',
+      comment: 'review reply',
+    };
+    await service.replyToReviewComment(params);
     expect(octokitMock.pulls.createReplyForReviewComment).toHaveBeenCalledWith({
       owner: 'owner',
       repo: 'repo',
@@ -93,7 +111,13 @@ describe('GitHubService', () => {
   describe('getPRDetails', () => {
     it('should return PR details from GITHUB_EVENT_PATH', async () => {
       const eventData = {
-        pull_request: { number: 123 },
+        pull_request: {
+          number: 123,
+          head: {
+            sha: 'abc123',
+            path: 'feature-branch',
+          },
+        },
         repository: { owner: { login: 'alex' }, name: 'repo' },
       };
       process.env.GITHUB_EVENT_PATH = '/tmp/event.json';
@@ -102,8 +126,10 @@ describe('GitHubService', () => {
       expect(details).toEqual({
         owner: 'alex',
         repo: 'repo',
-        prNumber: 123,
+        pullNumber: 123,
         platform: 'github',
+        commitId: 'abc123',
+        path: 'feature-branch',
       });
     });
 
@@ -115,17 +141,19 @@ describe('GitHubService', () => {
       expect(details).toEqual({
         owner: 'alex',
         repo: 'repo',
-        prNumber: 456,
+        pullNumber: 456,
         platform: 'github',
+        commitId: '',
+        path: '',
       });
     });
 
-    it('should return null if no PR details', async () => {
+    it('should return undefined if no PR details', async () => {
       delete process.env.GITHUB_EVENT_PATH;
       process.env.GITHUB_REPOSITORY = '';
       process.env.GITHUB_EVENT_NUMBER = '';
       const details = await service.getPRDetails();
-      expect(details).toBeNull();
+      expect(details).toBeUndefined();
     });
   });
 
@@ -152,23 +180,23 @@ describe('GitHubService', () => {
     octokitMock.repos.getContent.mockResolvedValue({
       data: { content: Buffer.from('hello').toString('base64') },
     });
-    const content = await service.getFileContent(
-      'owner',
-      'repo',
-      'file.txt',
-      1,
-    );
+    const content = await service.getFileContent({
+      owner: 'owner',
+      repo: 'repo',
+      filePath: 'file.txt',
+      pullNumber: 1,
+    });
     expect(content).toBe('hello');
   });
 
   it('should return null if getFileContent fails', async () => {
     octokitMock.pulls.get.mockRejectedValue(new Error('fail'));
-    const content = await service.getFileContent(
-      'owner',
-      'repo',
-      'file.txt',
-      1,
-    );
+    const content = await service.getFileContent({
+      owner: 'owner',
+      repo: 'repo',
+      filePath: 'file.txt',
+      pullNumber: 1,
+    });
     expect(content).toBeNull();
   });
 });

@@ -69,24 +69,19 @@ export class GithubProvider implements VcsProvider {
     return '';
   }
 
-  // async getPullRequestCommits(): Promise<CommitReviewInfo> {
+  async getPullRequestCommits(): Promise<PullRequestReviewInfo[]> {
+    const commits = await this.getCommits();
+    // For commit message review, we only need basic commit info without files
+    const reviewInfos: PullRequestReviewInfo[] = commits.map((commit) => ({
+      hash: commit.sha,
+      date: commit.commit.author?.date || '',
+      message: commit.commit.message,
+      author: commit.commit.author?.name || '',
+      files: [],
+    }));
 
-  //     const commits = await this.getCommits();
-  //     // For commit message review, we only need basic commit info without files
-  //      = commits.map((commit) => ({
-  //       hash: commit.sha,
-  //       date: commit.commit.author?.date || '',
-  //       message: commit.commit.message,
-  //       author: commit.commit.author?.name || '',
-  //       files: [], // Empty files array as we don't need file changes for message review
-  //     }));
-
-  //     const commitInfo = {
-
-  //     }
-
-  //   return commitInfo;
-  // }
+    return reviewInfos;
+  }
 
   async getPullRequestFiles(): Promise<PullRequestReviewInfo> {
     try {
@@ -102,7 +97,7 @@ export class GithubProvider implements VcsProvider {
       const { data: files } = await octokit.pulls.listFiles(prInfo);
 
       // For code review, we only need the final state of changes
-      const commitInfo: PullRequestReviewInfo = {
+      const reviewInfo: PullRequestReviewInfo = {
         hash: pullRequest.head.sha,
         date: pullRequest.updated_at,
         message: pullRequest.title,
@@ -113,7 +108,7 @@ export class GithubProvider implements VcsProvider {
         })),
       };
 
-      return commitInfo;
+      return reviewInfo;
     } catch (error) {
       console.error(
         chalk.red('Error getting PR changes for code review:'),

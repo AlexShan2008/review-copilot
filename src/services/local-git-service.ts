@@ -3,12 +3,15 @@ import {
   GitPlatformDetails,
   CreateReviewCommentParams,
   createIssueComment,
-} from './git-platform.interface';
+  ReplyToCommentParams,
+  ReplyToReviewCommentParams,
+  GetFileContentParams,
+} from './services.types';
 import { execSync } from 'child_process';
 import fs from 'fs';
 
 export class LocalGitService implements IGitPlatformService {
-  async getPRDetails(): Promise<GitPlatformDetails | null> {
+  async getPRDetails(): Promise<GitPlatformDetails | undefined> {
     // In local development, we'll use the current branch and repository info
     try {
       const remoteUrl = execSync('git config --get remote.origin.url')
@@ -38,10 +41,12 @@ export class LocalGitService implements IGitPlatformService {
         repo,
         pullNumber: 1, // Dummy PR number for local development
         platform: 'github', // Default to GitHub for local development
+        commitId: '',
+        path: '',
       };
     } catch (error) {
       console.error('Error getting local git details:', error);
-      return null;
+      return undefined;
     }
   }
 
@@ -64,31 +69,21 @@ export class LocalGitService implements IGitPlatformService {
     console.log('=====================\n');
   }
 
-  async replyToComment(
-    owner: string,
-    repo: string,
-    pullNumber: number,
-    commentId: number,
-    comment: string,
-  ): Promise<void> {
+  async replyToComment(params: ReplyToCommentParams): Promise<void> {
     // In local development, just log the reply
     console.log('\n=== Reply to Comment ===');
-    console.log(`Comment ID: ${commentId}`);
-    console.log(comment);
+    console.log(`Comment ID: ${params.commentId}`);
+    console.log(params.comment);
     console.log('=====================\n');
   }
 
   async replyToReviewComment(
-    owner: string,
-    repo: string,
-    pullNumber: number,
-    threadId: string,
-    comment: string,
+    params: ReplyToReviewCommentParams,
   ): Promise<void> {
     // In local development, just log the review reply
     console.log('\n=== Reply to Review Comment ===');
-    console.log(`Thread ID: ${threadId}`);
-    console.log(comment);
+    console.log(`Thread ID: ${params.threadId}`);
+    console.log(params.comment);
     console.log('=====================\n');
   }
 
@@ -100,16 +95,11 @@ export class LocalGitService implements IGitPlatformService {
     return execSync('git log -1 --pretty=%B').toString().trim();
   }
 
-  async getFileContent(
-    owner: string,
-    repo: string,
-    filePath: string,
-    pullNumber: number,
-  ): Promise<string | null> {
+  async getFileContent(params: GetFileContentParams): Promise<string | null> {
     try {
       // In local development, read the file directly from the filesystem
-      if (fs.existsSync(filePath)) {
-        return fs.readFileSync(filePath, 'utf8');
+      if (fs.existsSync(params.filePath)) {
+        return fs.readFileSync(params.filePath, 'utf8');
       }
       return null;
     } catch (error) {

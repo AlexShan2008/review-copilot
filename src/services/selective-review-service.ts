@@ -1,8 +1,11 @@
 import { ProviderFactory } from '../providers/provider-factory';
 import { ConfigManager } from '../config/config-manager';
-import { SelectiveReviewContext } from '../types/selective-review';
-import { CodeReviewResult, CodeReviewSuggestion } from '../types';
+import { SelectiveReviewContext } from '../types/selective-review.types';
 import { GitPlatformFactory } from './git-platform-factory';
+import {
+  CodeReviewResult,
+  CodeReviewSuggestion,
+} from '../providers/provider.types';
 
 export class SelectiveReviewService {
   private static instance: SelectiveReviewService;
@@ -24,9 +27,9 @@ export class SelectiveReviewService {
   public async processSelectiveReview(
     context: SelectiveReviewContext,
   ): Promise<CodeReviewResult> {
-    const configManager = ConfigManager.getInstance();
+    const configManager = await ConfigManager.getInstance();
     const config = configManager.getConfig();
-    const aiProvider = ProviderFactory.createProvider(config);
+    const aiProvider = ProviderFactory.createProvider(config as any);
 
     try {
       // Create a prompt that includes the context of the review
@@ -44,7 +47,7 @@ export class SelectiveReviewService {
             {
               message:
                 typeof result === 'string' ? result : JSON.stringify(result),
-              file: context.filePath,
+              filename: context.filePath,
               line: context.startLine,
               severity: 'info',
               reviewType: 'line-specific',
@@ -126,24 +129,24 @@ ${context.fullFileContent
           `Attempting to reply to review comment thread ${context.threadId}...`,
         );
         // For PR review comments, use the review comment API
-        await gitService.replyToReviewComment(
-          context.owner,
-          context.repo,
-          context.pullNumber,
-          context.threadId,
+        await gitService.replyToReviewComment({
+          owner: context.owner,
+          repo: context.repo,
+          pullNumber: context.pullNumber,
+          threadId: context.threadId,
           comment,
-        );
+        });
         console.log('Successfully replied to review comment thread');
       } else if (context.commentId) {
         console.log(`Attempting to reply to comment ${context.commentId}...`);
         // For regular PR comments, use the issues comments API
-        await gitService.replyToComment(
-          context.owner,
-          context.repo,
-          context.pullNumber,
-          context.commentId,
+        await gitService.replyToComment({
+          owner: context.owner,
+          repo: context.repo,
+          pullNumber: context.pullNumber,
+          commentId: context.commentId,
           comment,
-        );
+        });
         console.log('Successfully replied to comment');
       } else {
         console.log(

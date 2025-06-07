@@ -14,13 +14,16 @@ export class GitlabProvider implements VcsProvider {
       author: '',
     };
   }
-  async getPullRequestCommits(): Promise<PullRequestReviewInfo> {
+  async getPullRequestCommits(): Promise<PullRequestReviewInfo[]> {
     // TODO: Implement GitLab-specific logic for getting commit messages
-    return {
-      hash: '',
-      date: '',
-      message: '',
-      author: '',
-    };
+    return [
+      {
+        hash: '',
+        date: '',
+        message: '',
+        author: '',
+        files: [],
+      },
+    ];
   }
 }

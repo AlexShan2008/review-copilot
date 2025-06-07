@@ -2,9 +2,10 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { ConfigManager } from '../../config/config-manager';
 import { SelectiveReviewService } from '../../services/selective-review-service';
-import { SelectiveReviewContext } from '../../types/selective-review';
+import { SelectiveReviewContext } from '../../types/selective-review.types';
 import { GitPlatformFactory } from '../../services/git-platform-factory';
 import { FileContentProviderFactory } from '../../services/file-content-provider';
+import fs from 'fs';
 
 interface SelectiveReviewCommandOptions {
   config: string;
@@ -25,31 +26,44 @@ export async function selectiveReviewCommand(
     spinner = ora('Starting selective code review...').start();
 
     // Load configuration
-    const configManager = ConfigManager.getInstance();
-    await configManager.loadConfig(options.config);
+    const configManager = await ConfigManager.getInstance(options.config);
 
-    // Get PR details for context
-    const gitService = GitPlatformFactory.createService();
-    const prDetails = await gitService.getPRDetails();
+    // Determine if running in CI environment
+    const isCI =
+      process.env.GITHUB_ACTIONS === 'true' || process.env.GITLAB_CI === 'true';
 
-    if (!prDetails) {
-      if (spinner) spinner.fail('Could not get repository details');
-      return false;
+    let fileContent: string | null = null;
+    let prDetails: any = undefined;
+
+    if (isCI) {
+      // CI environment, remote pull PR information and file content
+      const gitService = GitPlatformFactory.createService();
+      prDetails = await gitService.getPRDetails();
+
+      if (!prDetails) {
+        if (spinner) spinner.fail('Could not get repository details');
+        return false;
+      }
+
+      const fileContentProvider =
+        FileContentProviderFactory.createProvider(gitService);
+      fileContent = await fileContentProvider.getFileContent(options.file, {
+        platform: prDetails.platform,
+        commitId: prDetails.commitId,
+        path: prDetails.path,
+        owner: prDetails.owner,
+        repo: prDetails.repo,
+        pullNumber: prDetails.pullNumber as number,
+      });
+    } else {
+      // Local mode, read local file content
+      try {
+        fileContent = fs.readFileSync(options.file, 'utf-8');
+      } catch (e) {
+        if (spinner) spinner.fail(`Could not read local file: ${options.file}`);
+        return false;
+      }
     }
-
-    // Get file content using the appropriate provider
-    const fileContentProvider =
-      FileContentProviderFactory.createProvider(gitService);
-    const fileContent = await fileContentProvider.getFileContent(
-      options.file,
-      process.env.GITHUB_ACTIONS === 'true' || process.env.GITLAB_CI === 'true'
-        ? {
-            owner: prDetails.owner,
-            repo: prDetails.repo,
-            prNumber: prDetails.prNumber,
-          }
-        : undefined,
-    );
 
     if (!fileContent) {
       if (spinner)
@@ -67,7 +81,7 @@ export async function selectiveReviewCommand(
       return false;
     }
 
-    // Fix: Use inclusive range for GitHub's 1-based line numbers
+    // Use inclusive range for selected lines
     const selectedLines = lines.slice(options.startLine - 1, options.endLine);
     const selectedCodeContent = selectedLines.join('\n');
 
@@ -76,12 +90,12 @@ export async function selectiveReviewCommand(
       filePath: options.file,
       startLine: options.startLine,
       endLine: options.endLine,
-      fullFileContent: fileContent, // Pass the entire file content
+      fullFileContent: fileContent, // Always pass the entire file content
       selectedCodeContent,
       triggerComment: options.comment,
-      pullNumber: prDetails.prNumber,
-      owner: prDetails.owner,
-      repo: prDetails.repo,
+      pullNumber: prDetails?.pullNumber,
+      owner: prDetails?.owner,
+      repo: prDetails?.repo,
       commentId: options.commentId,
       threadId: options.threadId,
     };

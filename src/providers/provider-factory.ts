@@ -1,10 +1,16 @@
-import { Config, IAIProvider, ProviderConfig, AIProviderType } from '../types';
+import {
+  IAIProvider,
+  AIProviderType,
+  ProviderFactoryConfig,
+  AIProviderConfig as ProviderFactoryAIProviderConfig,
+} from './provider.types';
+import { AIProviderConfig } from '../types/review.types';
 import { OpenAIProvider } from './openai-provider';
 import { DeepSeekProvider } from './deepseek-provider';
 import chalk from 'chalk';
 
 export class ProviderFactory {
-  static createProvider(config: Config): IAIProvider {
+  static createProvider(config: ProviderFactoryConfig): IAIProvider {
     if (!config.providers) {
       throw new Error(
         'No providers configuration found. Please update your configuration to use the new format.',
@@ -12,7 +18,7 @@ export class ProviderFactory {
     }
 
     const enabledProviders = Object.entries(config.providers).filter(
-      ([_, providerConfig]) => providerConfig.enabled,
+      ([_, providerConfig]) => providerConfig?.enabled,
     );
 
     if (enabledProviders.length === 0) {
@@ -28,16 +34,33 @@ export class ProviderFactory {
     }
 
     const [providerName, providerConfig] = enabledProviders[0];
+    if (!providerConfig) {
+      throw new Error(
+        `Provider configuration for ${providerName} is undefined`,
+      );
+    }
+
+    // Ensure all required fields are present
+    const requiredFields: Array<keyof ProviderFactoryAIProviderConfig> = [
+      'apiKey',
+      'model',
+      'baseURL',
+    ];
+    const missingFields = requiredFields.filter(
+      (field) => !providerConfig[field],
+    );
+    if (missingFields.length > 0) {
+      throw new Error(
+        `Missing required fields for ${providerName} provider: ${missingFields.join(
+          ', ',
+        )}`,
+      );
+    }
+
     console.log(chalk.blue(`Using ${providerName} as AI provider`));
-    console.log(chalk.gray('Provider config:'), {
-      ...providerConfig,
-      apiKey: providerConfig.apiKey
-        ? '***' + providerConfig.apiKey.slice(-4)
-        : undefined,
-    });
 
     const { enabled, ...providerSettings } = providerConfig;
-    const settings = {
+    const settings: AIProviderConfig = {
       ...providerSettings,
       provider: providerName.toLowerCase() as AIProviderType,
     };
@@ -54,26 +77,31 @@ export class ProviderFactory {
     }
   }
 
-  static validateConfig(config: Config): void {
+  static validateConfig(config: ProviderFactoryConfig): void {
     if (!config.providers) {
       throw new Error('No providers configuration found');
     }
 
     Object.entries(config.providers).forEach(([name, providerConfig]) => {
-      if (providerConfig.enabled) {
-        this.validateProviderConfig(name, providerConfig);
+      if (providerConfig?.enabled) {
+        const settings: AIProviderConfig = {
+          ...providerConfig,
+          provider: name.toLowerCase() as AIProviderType,
+        };
+        this.validateProviderConfig(name, settings);
       }
     });
   }
 
   private static validateProviderConfig(
     name: string,
-    config: ProviderConfig,
+    config: AIProviderConfig,
   ): void {
-    const requiredFields: Array<keyof ProviderConfig> = [
+    const requiredFields: Array<keyof AIProviderConfig> = [
       'apiKey',
       'model',
       'baseURL',
+      'provider',
     ];
     const missingFields = requiredFields.filter((field) => !config[field]);
 
@@ -85,7 +113,7 @@ export class ProviderFactory {
       );
     }
 
-    // 验证 baseURL 格式
+    // Validate baseURL format
     if (!config.baseURL.endsWith('/v1')) {
       console.warn(
         chalk.yellow(
