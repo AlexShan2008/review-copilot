@@ -2,6 +2,46 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.7](https://github.com/AlexShan2008/review-copilot/compare/v0.4.6...v0.4.7) (2025-06-08)
+
+
+### Features
+
+* enable [@review-copilot](https://github.com/review-copilot) in PR comments to trigger code review ([d85c4f1](https://github.com/AlexShan2008/review-copilot/commit/d85c4f1df22f4fffd627dbab1e4f13ad0dadb923))
+* implement line-specific AI code review with PR comment integration ([bb7d3d6](https://github.com/AlexShan2008/review-copilot/commit/bb7d3d6de3c97c272b672be9c44308d388fe53c4))
+* temporarily hide review icon ([7dcd1ba](https://github.com/AlexShan2008/review-copilot/commit/7dcd1ba9fe9a102f6b55dc287c146b0105f5a418))
+
+
+### Bug Fixes
+
+* **github-provider:** return all PR commit messages and diffs for review ([cb6d16a](https://github.com/AlexShan2008/review-copilot/commit/cb6d16afaf16970780464e78d950c84ff2ff007e))
+* pnpm run test fail ([44dbb50](https://github.com/AlexShan2008/review-copilot/commit/44dbb5016e4e2292adbaf3675acbc979eaf03d4b))
+* pull request comment does not trigger code review action ([d5215df](https://github.com/AlexShan2008/review-copilot/commit/d5215dfe37a312d4eed12b86cec43af9e01ede91))
+* run tests with coverage fail ([99eea8d](https://github.com/AlexShan2008/review-copilot/commit/99eea8d5e563f395a8011b9b2201183c5c1b8f0d))
+* skip review comment creation when no code changes to review ([53b5775](https://github.com/AlexShan2008/review-copilot/commit/53b5775ea2cd8f5f06138cf69ce8c461326d8b02))
+
+
+### Tests
+
+* update test cases ([3496cde](https://github.com/AlexShan2008/review-copilot/commit/3496cdea2143a7db09758ad7ace55ec5a753deeb))
+
+
+### Refactors
+
+* **github-provider:** enhance security, performance, and error handling ([7fff774](https://github.com/AlexShan2008/review-copilot/commit/7fff77471b4d1fcbd166a6a980a151b13558ee91))
+* optimize implementation based on the code review ([a2a5277](https://github.com/AlexShan2008/review-copilot/commit/a2a5277ec6aa38c913c6822d5f499f935c06b1ff))
+* optimize review and comment code implementation ([2baed7d](https://github.com/AlexShan2008/review-copilot/commit/2baed7d85643463916c1b50fe52183f5741851b9))
+* restructure types organization and remove ai-provider-factory ([3a859a3](https://github.com/AlexShan2008/review-copilot/commit/3a859a3e2fc1938cba8c42affe0406d7ee1f57af))
+* standardize PR field naming and improve type definitions ([d095bdb](https://github.com/AlexShan2008/review-copilot/commit/d095bdb3d0e5b97ca10d56f755c6b2f778a27564))
+* standardize VCS provider interface method names ([4fd6627](https://github.com/AlexShan2008/review-copilot/commit/4fd66279250433872e73b242c0786251ecaba99d))
+
+
+### Documentation
+
+* **README:** document manual trigger via [@review-copilot](https://github.com/review-copilot) mention ([e4510b5](https://github.com/AlexShan2008/review-copilot/commit/e4510b58136c7600fcaf16656716d05476b2594a))
+* update README ([251a0d2](https://github.com/AlexShan2008/review-copilot/commit/251a0d2700434c3f9282d77368b2d9f4abd0a974))
+* use npx and local deps in README to follow Node.js best practices ([d48e045](https://github.com/AlexShan2008/review-copilot/commit/d48e04523a97a610e76090bf5fbed948ac1a35cc))
+
 ### [0.4.6](https://github.com/AlexShan2008/review-copilot/compare/v0.4.5...v0.4.6) (2025-06-01)
 
 
