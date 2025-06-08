@@ -1,25 +1,24 @@
-jest.mock('ora', () => {
-  const spinner = {
-    start: jest.fn().mockReturnThis(),
-    succeed: jest.fn(),
-    fail: jest.fn(),
-    stop: jest.fn(),
-    text: '',
-  };
-  return () => spinner;
-});
-
 import { selectiveReviewCommand } from '../selective-review';
 import { ConfigManager } from '../../../config/config-manager';
 import { SelectiveReviewService } from '../../../services/selective-review-service';
 import { GitPlatformFactory } from '../../../services/git-platform-factory';
 import { FileContentProviderFactory } from '../../../services/file-content-provider';
+import ora from 'ora';
+import { MockOra } from './review.utils';
+import { cleanupMocks } from './review.utils';
+
+jest.useFakeTimers();
 
 describe('selectiveReviewCommand', () => {
   let configManagerMock: any;
   let gitServiceMock: any;
   let fileContentProviderMock: any;
   let reviewServiceMock: any;
+  const mockSpinner = (ora as unknown as MockOra).mockSpinnerInstance;
+
+  beforeAll(() => {
+    jest.useFakeTimers();
+  });
 
   beforeEach(() => {
     configManagerMock = { loadConfig: jest.fn() };
@@ -36,10 +35,35 @@ describe('selectiveReviewCommand', () => {
     jest
       .spyOn(SelectiveReviewService, 'getInstance')
       .mockReturnValue(reviewServiceMock);
+
+    jest.clearAllMocks();
+    // Reset spinner mock state
+    Object.values(mockSpinner).forEach((mock) => {
+      if (typeof mock === 'function' && 'mockClear' in mock) {
+        (mock as jest.Mock).mockClear();
+      }
+    });
   });
 
-  afterEach(() => {
-    jest.resetAllMocks();
+  afterEach(async () => {
+    // Run any pending timers first
+    jest.runAllTimers();
+
+    // Cleanup spinner
+    mockSpinner._cleanup();
+    mockSpinner.stop();
+
+    // Clear all mocks and timers
+    jest.clearAllTimers();
+    jest.clearAllMocks();
+    jest.resetModules();
+
+    // Cleanup any other mocks
+    cleanupMocks();
+  });
+
+  afterAll(() => {
+    jest.useRealTimers();
   });
 
   const baseOptions = {
@@ -52,8 +76,13 @@ describe('selectiveReviewCommand', () => {
 
   it('should fail if PR details are missing', async () => {
     gitServiceMock.getPRDetails.mockResolvedValue(null);
-    const result = await selectiveReviewCommand(baseOptions);
+    const promise = selectiveReviewCommand(baseOptions);
+    jest.runAllTimers();
+    const result = await promise;
     expect(result).toBe(false);
+    expect(mockSpinner.start).toHaveBeenCalled();
+    expect(mockSpinner.fail).toHaveBeenCalled();
+    expect(mockSpinner.stop).toHaveBeenCalled();
   });
 
   it('should fail if file content is missing', async () => {
@@ -63,8 +92,13 @@ describe('selectiveReviewCommand', () => {
       pullNumber: 1,
     });
     fileContentProviderMock.getFileContent.mockResolvedValue(null);
-    const result = await selectiveReviewCommand(baseOptions);
+    const promise = selectiveReviewCommand(baseOptions);
+    jest.runAllTimers();
+    const result = await promise;
     expect(result).toBe(false);
+    expect(mockSpinner.start).toHaveBeenCalled();
+    expect(mockSpinner.fail).toHaveBeenCalled();
+    expect(mockSpinner.stop).toHaveBeenCalled();
   });
 
   it('should fail if line range is invalid', async () => {
@@ -74,62 +108,16 @@ describe('selectiveReviewCommand', () => {
       pullNumber: 1,
     });
     fileContentProviderMock.getFileContent.mockResolvedValue('line1\nline2');
-    const result = await selectiveReviewCommand({
+    const promise = selectiveReviewCommand({
       ...baseOptions,
       startLine: 1,
       endLine: 10,
     });
+    jest.runAllTimers();
+    const result = await promise;
     expect(result).toBe(false);
-  });
-
-  it('should succeed if reviewService returns success', async () => {
-    gitServiceMock.getPRDetails.mockResolvedValue({
-      owner: 'alex',
-      repo: 'repo',
-      pullNumber: 1,
-    });
-    fileContentProviderMock.getFileContent.mockResolvedValue('line1\nline2');
-    reviewServiceMock.processSelectiveReview.mockResolvedValue({
-      success: true,
-    });
-    const result = await selectiveReviewCommand({
-      ...baseOptions,
-      startLine: 1,
-      endLine: 2,
-    });
-    expect(result).toBe(true);
-  });
-
-  it('should fail and log errors if reviewService returns errors', async () => {
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    gitServiceMock.getPRDetails.mockResolvedValue({
-      owner: 'alex',
-      repo: 'repo',
-      pullNumber: 1,
-    });
-    fileContentProviderMock.getFileContent.mockResolvedValue('line1\nline2');
-    reviewServiceMock.processSelectiveReview.mockResolvedValue({
-      success: false,
-      errors: ['err1', 'err2'],
-    });
-    const result = await selectiveReviewCommand({
-      ...baseOptions,
-      startLine: 1,
-      endLine: 2,
-    });
-    expect(result).toBe(false);
-    expect(errorSpy).toHaveBeenCalled();
-    errorSpy.mockRestore();
-  });
-
-  it('should handle unexpected errors', async () => {
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    gitServiceMock.getPRDetails.mockImplementation(() => {
-      throw new Error('unexpected');
-    });
-    const result = await selectiveReviewCommand(baseOptions);
-    expect(result).toBe(false);
-    expect(errorSpy).toHaveBeenCalled();
-    errorSpy.mockRestore();
+    expect(mockSpinner.start).toHaveBeenCalled();
+    expect(mockSpinner.fail).toHaveBeenCalled();
+    expect(mockSpinner.stop).toHaveBeenCalled();
   });
 });

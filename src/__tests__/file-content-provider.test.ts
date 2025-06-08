@@ -21,17 +21,14 @@ describe('LocalFileContentProvider', () => {
   });
 
   afterEach(() => {
-    // 确保所有mock都被清理
     jest.clearAllMocks();
     errorSpy.mockRestore();
     fsSpy.mockRestore();
 
-    // 清理provider实例
     provider = null as any;
   });
 
   afterAll(() => {
-    // 完全恢复所有mock
     jest.restoreAllMocks();
   });
 
