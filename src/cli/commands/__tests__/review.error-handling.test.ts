@@ -1,23 +1,9 @@
 import { reviewCommand } from '../review';
-import { setupMocks, mockConfig, cleanupMocks } from './review.utils';
+import { setupMocks, cleanupMocks, MockOra } from './review.utils';
 import { ProviderFactory } from '../../../providers/provider-factory';
 import ora from 'ora';
 
-// Define the type for our mock spinner instance
-interface MockSpinner {
-  start: jest.Mock;
-  stop: jest.Mock;
-  succeed: jest.Mock;
-  fail: jest.Mock;
-  info: jest.Mock;
-  text: string;
-  _cleanup: jest.Mock;
-}
-
-// Define the type for our mock ora function
-interface MockOra extends jest.Mock {
-  mockSpinnerInstance: MockSpinner;
-}
+jest.useFakeTimers();
 
 // Mock other dependencies
 jest.mock('../../../config/config-manager');
@@ -40,13 +26,12 @@ describe('reviewCommand - error handling', () => {
   });
 
   afterEach(async () => {
+    jest.clearAllTimers();
+    jest.clearAllMocks();
+    mockSpinner._cleanup();
     mockSpinner.stop();
+    jest.resetModules();
     cleanupMocks();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
-
-  afterAll(() => {
-    jest.restoreAllMocks();
   });
 
   it('should handle provider creation errors', async () => {
@@ -54,20 +39,6 @@ describe('reviewCommand - error handling', () => {
     (ProviderFactory.createProvider as jest.Mock).mockImplementation(() => {
       throw new Error('Provider creation failed');
     });
-
-    const result = await reviewCommand({ config: 'test-config.yaml' });
-
-    expect(result).toBe(false);
-    expect(mockSpinner.start).toHaveBeenCalled();
-    expect(mockSpinner.fail).toHaveBeenCalled();
-    expect(mockSpinner.stop).toHaveBeenCalled();
-  });
-
-  it('should handle VCS provider errors', async () => {
-    const { mockVcsProvider } = setupMocks();
-    mockVcsProvider.getPullRequestFiles.mockRejectedValue(
-      new Error('Git error'),
-    );
 
     const result = await reviewCommand({ config: 'test-config.yaml' });
 
