@@ -4,64 +4,104 @@ import {
   GitPlatformFileContentProvider,
   FileContentProviderFactory,
 } from '../services/file-content-provider';
-import { GitPlatformDetails } from '../services/services.types';
+import {
+  GitPlatformDetails,
+  IGitPlatformService,
+} from '../services/services.types';
 
 describe('LocalFileContentProvider', () => {
+  let provider: LocalFileContentProvider;
+  let fsSpy: jest.SpyInstance;
+  let errorSpy: jest.SpyInstance;
+
+  beforeEach(() => {
+    provider = new LocalFileContentProvider();
+    fsSpy = jest.spyOn(fs, 'readFileSync');
+    errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    // 确保所有mock都被清理
+    jest.clearAllMocks();
+    errorSpy.mockRestore();
+    fsSpy.mockRestore();
+
+    // 清理provider实例
+    provider = null as any;
+  });
+
+  afterAll(() => {
+    // 完全恢复所有mock
+    jest.restoreAllMocks();
+  });
+
   it('should return file content if file exists', async () => {
-    jest.spyOn(fs, 'readFileSync').mockReturnValue('file content');
-    const provider = new LocalFileContentProvider();
+    fsSpy.mockReturnValue('file content');
     const content = await provider.getFileContent('file.txt');
     expect(content).toBe('file content');
+    expect(fsSpy).toHaveBeenCalledWith('file.txt', 'utf8');
   });
 
   it('should return null and log error if file does not exist', async () => {
-    jest.spyOn(fs, 'readFileSync').mockImplementation(() => {
+    fsSpy.mockImplementation(() => {
       throw new Error('not found');
     });
-    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-    const provider = new LocalFileContentProvider();
     const content = await provider.getFileContent('missing.txt');
     expect(content).toBeNull();
     expect(errorSpy).toHaveBeenCalled();
-    errorSpy.mockRestore();
   });
 });
 
 describe('GitPlatformFileContentProvider', () => {
-  const gitServiceMock = {
-    getFileContent: jest.fn(),
-  };
-  const provider = new GitPlatformFileContentProvider(gitServiceMock as any);
+  let gitServiceMock: { getFileContent: jest.Mock };
+  let provider: GitPlatformFileContentProvider;
+
+  beforeEach(() => {
+    gitServiceMock = {
+      getFileContent: jest.fn(),
+    };
+    provider = new GitPlatformFileContentProvider(gitServiceMock as any);
+  });
+
+  afterEach(() => {
+    // Clean up mocks after each test
+    jest.clearAllMocks();
+  });
+
+  afterAll(() => {
+    // Restore all mocks after all tests
+    jest.restoreAllMocks();
+  });
 
   it('should call gitService.getFileContent with correct args', async () => {
-    gitServiceMock.getFileContent.mockResolvedValue('remote content');
-    const content = await provider.getFileContent('file.txt', {
+    const mockContent = 'remote content';
+    gitServiceMock.getFileContent.mockResolvedValue(mockContent);
+
+    const context: GitPlatformDetails = {
       owner: 'alex',
       repo: 'repo',
       pullNumber: 1,
       platform: 'github',
       commitId: 'abc123',
       path: 'main',
+    };
+
+    const content = await provider.getFileContent('file.txt', context);
+
+    expect(gitServiceMock.getFileContent).toHaveBeenCalledWith({
+      owner: context.owner,
+      repo: context.repo,
+      filePath: 'file.txt',
+      pullNumber: context.pullNumber,
     });
-    expect(gitServiceMock.getFileContent).toHaveBeenCalledWith(
-      'alex',
-      'repo',
-      'file.txt',
-      1,
-    );
-    expect(content).toBe('remote content');
+    expect(content).toBe(mockContent);
   });
 
   it('should throw if context is missing', async () => {
+    const invalidContext = {} as GitPlatformDetails;
+
     await expect(
-      provider.getFileContent('file.txt', {
-        owner: 'alex',
-        repo: 'repo',
-        pullNumber: 1,
-        platform: 'github',
-        commitId: '',
-        path: '',
-      } as GitPlatformDetails),
+      provider.getFileContent('file.txt', invalidContext),
     ).rejects.toThrow(
       'Missing required context for Git platform file content retrieval',
     );
@@ -69,23 +109,23 @@ describe('GitPlatformFileContentProvider', () => {
 });
 
 describe('FileContentProviderFactory', () => {
-  const gitServiceMock = {};
-  const OLD_ENV = process.env;
+  let gitServiceMock: IGitPlatformService;
+  let originalEnv: NodeJS.ProcessEnv;
 
   beforeEach(() => {
-    jest.resetModules();
-    process.env = { ...OLD_ENV };
+    originalEnv = { ...process.env };
+    gitServiceMock = {
+      getFileContent: jest.fn(),
+    } as unknown as IGitPlatformService;
   });
 
-  afterAll(() => {
-    process.env = OLD_ENV;
+  afterEach(() => {
+    process.env = { ...originalEnv };
   });
 
   it('should return GitPlatformFileContentProvider in CI', () => {
     process.env.GITHUB_ACTIONS = 'true';
-    const provider = FileContentProviderFactory.createProvider(
-      gitServiceMock as any,
-    );
+    const provider = FileContentProviderFactory.createProvider(gitServiceMock);
     expect(provider).toBeInstanceOf(GitPlatformFileContentProvider);
   });
 

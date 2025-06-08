@@ -12,7 +12,12 @@ module.exports = {
     '<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}',
     '<rootDir>/src/**/*.{spec,test}.{js,jsx,ts,tsx}',
   ],
-  testPathIgnorePatterns: ['/node_modules/', 'review.utils.ts'],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/dist/',
+    '/build/',
+    'review.utils.ts',
+  ],
   transform: {
     '^.+\\.tsx?$': ['ts-jest'],
   },
@@ -22,4 +27,11 @@ module.exports = {
   detectLeaks: true,
   testTimeout: 10000,
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+
+  forceExit: false,
+  maxWorkers: 1,
+
+  workerIdleMemoryLimit: '512MB',
+
+  errorOnDeprecated: true,
 };
