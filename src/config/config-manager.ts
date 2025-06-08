@@ -136,11 +136,18 @@ export class ConfigManager {
     }
 
     this.configPromise = (async () => {
-      const configFile = await readFile(path, 'utf8');
-      const parsedConfig = parse(configFile);
-      const configWithEnv = this.replaceEnvVariables(parsedConfig);
-      this.config = configSchema.parse(configWithEnv);
-      return this.config;
+      try {
+        const configFile = await readFile(path, 'utf8');
+        const parsedConfig = parse(configFile);
+        const configWithEnv = this.replaceEnvVariables(parsedConfig);
+        this.config = configSchema.parse(configWithEnv);
+        return this.config;
+      } catch (error) {
+        // Reset the promise on error
+        this.configPromise = null;
+        this.config = null;
+        throw new Error('Failed to load config');
+      }
     })();
 
     return this.configPromise;

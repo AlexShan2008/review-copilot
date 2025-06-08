@@ -13,6 +13,7 @@ describe('ConfigManager', () => {
         apiKey: 'test-key',
         model: 'gpt-4o-mini',
         baseURL: 'https://api.openai.com/v1',
+        reviewLanguage: 'zh',
       },
     },
     triggers: [{ on: 'pull_request' }, { on: 'merge_request' }],
@@ -91,8 +92,11 @@ describe('ConfigManager', () => {
       providers: undefined, // Remove required providers field
     };
     (readFile as jest.Mock).mockResolvedValue(JSON.stringify(invalidConfig));
-    // Reset the singleton instance
+    // Reset the singleton instance and its internal state
     (ConfigManager as any).instance = undefined;
+    const instance = new (ConfigManager as any)();
+    (instance as any).configPromise = null;
+    (instance as any).config = null;
     await expect(ConfigManager.getInstance()).rejects.toThrow(
       'Failed to load config',
     );
