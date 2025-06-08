@@ -130,6 +130,23 @@ export async function outputToCIPlatform(
   }
 
   if (results.codeChanges) {
+    // Skip creating review comment if there are no actual code changes to review
+    const hasActualCodeChanges = results.codeChanges.some((result) =>
+      result.suggestions.some(
+        (suggestion) => suggestion.filename && (suggestion.line ?? 0) > 0,
+      ),
+    );
+
+    if (!hasActualCodeChanges) {
+      // Log the message but don't create a review comment
+      console.log(
+        chalk.gray(
+          '\n📋 No code changes to review. Skipping review comment creation.',
+        ),
+      );
+      return;
+    }
+
     const body = formatReviewResultsAsMarkdown(results.codeChanges);
 
     await context.gitService.createReviewComment({

@@ -10,12 +10,6 @@ import {
   ReplyToCommentParams,
 } from './services.types';
 import { execSync } from 'child_process';
-import ora from 'ora';
-import chalk from 'chalk';
-import { ConfigManager } from '../config/config-manager';
-import { GitPlatformFactory } from './git-platform-factory';
-import { SelectiveReviewService } from './selective-review-service';
-import { SelectiveReviewContext } from '../types/selective-review.types';
 
 export class GitHubService implements IGitPlatformService {
   private client: Octokit;

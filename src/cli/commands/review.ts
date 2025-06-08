@@ -107,7 +107,7 @@ export async function reviewCommand(
 
     if (context.config.rules.codeChanges.enabled) {
       const results = await reviewCodeChanges(context);
-      console.log('results========reviewCodeChanges', results);
+
       await outputReviewResults(context, {
         codeChanges: [
           {
