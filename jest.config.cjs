@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   preset: 'ts-jest/presets/default-esm',
   extensionsToTreatAsEsm: ['.ts'],
   testEnvironment: 'node',
@@ -20,9 +20,12 @@ export default {
     'review.utils.ts',
   ],
   transform: {
-    '^.+\\.tsx?$': ['ts-jest', {
-      useESM: true
-    }],
+    '^.+\\.tsx?$': [
+      'ts-jest',
+      {
+        useESM: true,
+      },
+    ],
   },
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
   verbose: true,
@@ -37,4 +40,4 @@ export default {
   workerIdleMemoryLimit: '512MB',
 
   errorOnDeprecated: true,
-}
+};
