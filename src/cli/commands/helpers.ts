@@ -8,6 +8,7 @@ import {
 } from '../../services/services.types';
 import { VcsProvider } from '../../utils/git-service.interface';
 import { CodeReviewResult } from '../../providers/provider.types';
+import { CreateReviewCommentParams } from '../../services/services.types';
 
 export interface ReviewResults {
   branchName?: CodeReviewResult[];
@@ -147,21 +148,80 @@ export async function outputToCIPlatform(
       return;
     }
 
-    const body = formatReviewResultsAsMarkdown(results.codeChanges);
+    // Separate general and line-specific suggestions
+    const generalSuggestions = results.codeChanges.filter((result) =>
+      result.suggestions.some(
+        (suggestion) => suggestion.reviewType !== 'line-specific',
+      ),
+    );
 
-    await context.gitService.createReviewComment({
-      owner: context.prDetails.owner,
-      repo: context.prDetails.repo,
-      pullNumber: context.prDetails.pullNumber,
-      body,
-      commitId: context.prDetails.commitId,
-      path: context.prDetails.path,
-      line: 1,
-      side: 'RIGHT',
-      startLine: 1,
-      startSide: 'RIGHT',
-      inReplyTo: 1,
-    });
+    const lineSpecificSuggestions = results.codeChanges.filter((result) =>
+      result.suggestions.some(
+        (suggestion) => suggestion.reviewType === 'line-specific',
+      ),
+    );
+
+    // Create general review comment if there are general suggestions
+    if (generalSuggestions.length > 0) {
+      const body = formatReviewResultsAsMarkdown(generalSuggestions);
+      const reviewCommentParams: CreateReviewCommentParams = {
+        owner: context.prDetails.owner,
+        repo: context.prDetails.repo,
+        pullNumber: context.prDetails.pullNumber,
+        body,
+        commitId: context.prDetails.commitId,
+        path: context.prDetails.path,
+      };
+      await context.gitService.createReviewComment(reviewCommentParams);
+    }
+
+    // Create line-specific review comments
+    for (const result of lineSpecificSuggestions) {
+      for (const suggestion of result.suggestions) {
+        if (
+          suggestion.reviewType === 'line-specific' &&
+          suggestion.line &&
+          suggestion.filename
+        ) {
+          const body = formatReviewResultsAsMarkdown([
+            {
+              ...result,
+              suggestions: [suggestion],
+            },
+          ]);
+
+          // Base parameters for all review comments
+          const reviewCommentParams: CreateReviewCommentParams = {
+            owner: context.prDetails.owner,
+            repo: context.prDetails.repo,
+            pullNumber: context.prDetails.pullNumber,
+            body,
+            commitId: context.prDetails.commitId,
+            path: suggestion.filename,
+            line: suggestion.line,
+            side: 'RIGHT',
+          };
+
+          // Add multi-line parameters if startLine is provided and different from line
+          if (
+            suggestion.startLine &&
+            suggestion.startLine !== suggestion.line
+          ) {
+            // Ensure startLine is less than line for multi-line comments
+            const startLine = Math.min(suggestion.startLine, suggestion.line);
+            const endLine = Math.max(suggestion.startLine, suggestion.line);
+
+            Object.assign(reviewCommentParams, {
+              startLine,
+              startSide: 'RIGHT',
+              line: endLine,
+            });
+          }
+
+          await context.gitService.createReviewComment(reviewCommentParams);
+        }
+      }
+    }
   }
 }
 
