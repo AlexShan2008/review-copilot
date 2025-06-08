@@ -1,58 +1,54 @@
-jest.mock('../../../config/config-manager', () => ({
-  ConfigManager: {
-    getInstance: jest.fn(),
-  },
-}));
-jest.mock('../../../utils/vcs-factory', () => ({
-  getVcsProvider: jest.fn(),
-}));
-jest.mock('../../../providers/provider-factory', () => ({
-  ProviderFactory: {
-    createProvider: jest.fn(),
-  },
-}));
-jest.mock('../../../providers/openai-provider', () => ({
-  OpenAIProvider: jest.fn(),
-}));
-jest.mock('../../../services/git-platform-factory', () => ({
-  GitPlatformFactory: {
-    createService: jest.fn(),
-  },
-}));
-jest.mock('micromatch', () => ({
-  isMatch: jest.fn((file: string, pattern: string) => {
-    if (pattern === '**/*.ts') return file.endsWith('.ts');
-    if (pattern === '**/*.{ts,tsx,js,jsx}')
-      return /\.(ts|tsx|js|jsx)$/.test(file);
-    return true;
-  }),
-}));
-jest.mock('ora', () =>
-  jest.fn(() => ({
-    start: jest.fn().mockReturnThis(),
-    stop: jest.fn().mockReturnThis(),
-    succeed: jest.fn().mockReturnThis(),
-    fail: jest.fn().mockReturnThis(),
-    info: jest.fn().mockReturnThis(),
-    text: '',
-  })),
-);
-jest.mock('chalk', () => ({
-  blue: jest.fn((str: any) => String(str)),
-  green: jest.fn((str: any) => String(str)),
-  yellow: jest.fn((str: any) => String(str)),
-  cyan: jest.fn((str: any) => String(str)),
-  white: jest.fn((str: any) => String(str)),
-  gray: jest.fn((str: any) => String(str)),
-  red: jest.fn((str: any) => String(str)),
-  bold: jest.fn((str: any) => String(str)),
-}));
-
 import { reviewCommand } from '../review';
-import { setupMocks } from './review.utils';
+import { setupMocks, mockConfig, cleanupMocks } from './review.utils';
 import { ProviderFactory } from '../../../providers/provider-factory';
+import ora from 'ora';
+
+// Define the type for our mock spinner instance
+interface MockSpinner {
+  start: jest.Mock;
+  stop: jest.Mock;
+  succeed: jest.Mock;
+  fail: jest.Mock;
+  info: jest.Mock;
+  text: string;
+  _cleanup: jest.Mock;
+}
+
+// Define the type for our mock ora function
+interface MockOra extends jest.Mock {
+  mockSpinnerInstance: MockSpinner;
+}
+
+// Mock other dependencies
+jest.mock('../../../config/config-manager');
+jest.mock('../../../utils/vcs-factory');
+jest.mock('../../../providers/provider-factory');
+jest.mock('../../../providers/openai-provider');
+jest.mock('../../../services/git-platform-factory');
 
 describe('reviewCommand - error handling', () => {
+  const mockSpinner = (ora as unknown as MockOra).mockSpinnerInstance;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Reset spinner mock state
+    Object.values(mockSpinner).forEach((mock) => {
+      if (typeof mock === 'function' && 'mockClear' in mock) {
+        (mock as jest.Mock).mockClear();
+      }
+    });
+  });
+
+  afterEach(async () => {
+    mockSpinner.stop();
+    cleanupMocks();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
+
+  afterAll(() => {
+    jest.restoreAllMocks();
+  });
+
   it('should handle provider creation errors', async () => {
     setupMocks();
     (ProviderFactory.createProvider as jest.Mock).mockImplementation(() => {
@@ -62,17 +58,23 @@ describe('reviewCommand - error handling', () => {
     const result = await reviewCommand({ config: 'test-config.yaml' });
 
     expect(result).toBe(false);
+    expect(mockSpinner.start).toHaveBeenCalled();
+    expect(mockSpinner.fail).toHaveBeenCalled();
+    expect(mockSpinner.stop).toHaveBeenCalled();
   });
 
   it('should handle VCS provider errors', async () => {
     const { mockVcsProvider } = setupMocks();
-    mockVcsProvider.getPullRequestChanges.mockRejectedValue(
+    mockVcsProvider.getPullRequestFiles.mockRejectedValue(
       new Error('Git error'),
     );
 
     const result = await reviewCommand({ config: 'test-config.yaml' });
 
     expect(result).toBe(false);
+    expect(mockSpinner.start).toHaveBeenCalled();
+    expect(mockSpinner.fail).toHaveBeenCalled();
+    expect(mockSpinner.stop).toHaveBeenCalled();
   });
 
   it('should handle OpenAI errors', async () => {
@@ -85,5 +87,8 @@ describe('reviewCommand - error handling', () => {
     const result = await reviewCommand({ config: 'test-config.yaml' });
 
     expect(result).toBe(true);
+    expect(mockSpinner.start).toHaveBeenCalled();
+    expect(mockSpinner.succeed).toHaveBeenCalled();
+    expect(mockSpinner.stop).toHaveBeenCalled();
   });
 });

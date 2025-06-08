@@ -1,5 +1,6 @@
-module.exports = {
-  preset: 'ts-jest',
+export default {
+  preset: 'ts-jest/presets/default-esm',
+  extensionsToTreatAsEsm: ['.ts'],
   testEnvironment: 'node',
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
@@ -19,14 +20,16 @@ module.exports = {
     'review.utils.ts',
   ],
   transform: {
-    '^.+\\.tsx?$': ['ts-jest'],
+    '^.+\\.tsx?$': ['ts-jest', {
+      useESM: true
+    }],
   },
   moduleFileExtensions: ['ts', 'js', 'json', 'node'],
   verbose: true,
   detectOpenHandles: true,
   detectLeaks: true,
   testTimeout: 10000,
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.cjs'],
 
   forceExit: false,
   maxWorkers: 1,
@@ -34,4 +37,4 @@ module.exports = {
   workerIdleMemoryLimit: '512MB',
 
   errorOnDeprecated: true,
-};
+}

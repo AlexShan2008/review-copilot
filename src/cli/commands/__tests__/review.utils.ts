@@ -2,14 +2,30 @@ import { ConfigManager } from '../../../config/config-manager';
 import { ProviderFactory } from '../../../providers/provider-factory';
 import { getVcsProvider } from '../../../utils/vcs-factory';
 import { GitPlatformFactory } from '../../../services/git-platform-factory';
+import { PullRequestReviewInfo } from '../../../utils/git-service.interface';
 
-// Type definitions for mockCommit and mockConfig
+// Type definitions for ora mock
+export interface MockSpinner {
+  start: jest.Mock;
+  stop: jest.Mock;
+  succeed: jest.Mock;
+  fail: jest.Mock;
+  info: jest.Mock;
+  text: string;
+  _cleanup: jest.Mock;
+}
+
+export interface MockOra extends jest.Mock {
+  mockSpinnerInstance: MockSpinner;
+}
+
+// Type definitions for mock data
 export interface MockFile {
-  file: string;
+  filename: string;
   changes: string;
 }
 
-export interface MockCommit {
+export interface MockCommit extends PullRequestReviewInfo {
   hash: string;
   date: string;
   message: string;
@@ -20,6 +36,8 @@ export interface MockCommit {
 export interface MockConfig {
   providers: Record<string, any>;
   rules: Record<string, any>;
+  triggers?: Record<string, any>;
+  customReviewPoints?: Record<string, any>;
 }
 
 export const mockCommit: MockCommit = {
@@ -29,7 +47,7 @@ export const mockCommit: MockCommit = {
   author: 'Test Author',
   files: [
     {
-      file: 'src/test.ts',
+      filename: 'src/test.ts',
       changes: 'test code changes',
     },
   ],
@@ -54,21 +72,52 @@ export const mockConfig: MockConfig = {
       prompt: 'Review this commit message',
     },
     branchName: {
-      enabled: false,
+      enabled: true,
       prompt: 'Review this branch name',
     },
   },
+  triggers: {
+    onPullRequest: true,
+    onPush: false,
+  },
+  customReviewPoints: {
+    security: {
+      enabled: true,
+      prompt: 'Review for security issues',
+    },
+  },
+};
+
+// Store original implementations
+const originalImplementations = {
+  ConfigManagerGetInstance: ConfigManager.getInstance,
+  ProviderFactoryCreateProvider: ProviderFactory.createProvider,
+  getVcsProvider,
+  GitPlatformFactoryCreateService: GitPlatformFactory.createService,
+};
+
+// Cleanup function to restore original implementations
+export const cleanupMocks = () => {
+  ConfigManager.getInstance = originalImplementations.ConfigManagerGetInstance;
+  ProviderFactory.createProvider =
+    originalImplementations.ProviderFactoryCreateProvider;
+  (getVcsProvider as any) = originalImplementations.getVcsProvider;
+  GitPlatformFactory.createService =
+    originalImplementations.GitPlatformFactoryCreateService;
 };
 
 export const setupMocks = (
   customConfig: MockConfig = mockConfig,
   customCommits: MockCommit[] = [mockCommit],
 ) => {
+  // Clean up any existing mocks first
+  cleanupMocks();
+
   const mockConfigManager = {
     loadConfig: jest.fn().mockResolvedValue(undefined),
     getConfig: jest.fn().mockReturnValue(customConfig),
   };
-  (ConfigManager.getInstance as jest.Mock).mockReturnValue(mockConfigManager);
+  ConfigManager.getInstance = jest.fn().mockReturnValue(mockConfigManager);
 
   const mockProvider = {
     review: jest.fn().mockResolvedValue({
@@ -76,23 +125,23 @@ export const setupMocks = (
       message: 'Review completed successfully',
     }),
   };
-  (ProviderFactory.createProvider as jest.Mock).mockReturnValue(mockProvider);
+  ProviderFactory.createProvider = jest.fn().mockReturnValue(mockProvider);
 
   const mockVcsProvider = {
-    getPullRequestChanges: jest.fn().mockResolvedValue(customCommits),
+    getPullRequestFiles: jest.fn().mockResolvedValue(customCommits[0]),
+    getPullRequestCommits: jest.fn().mockResolvedValue(customCommits),
     getCurrentBranchName: jest.fn().mockResolvedValue('feature/test'),
   };
-  (getVcsProvider as jest.Mock).mockReturnValue(mockVcsProvider);
+  (getVcsProvider as any) = jest.fn().mockReturnValue(mockVcsProvider);
 
   const mockGitService = {
     getPRDetails: jest
       .fn()
       .mockResolvedValue({ owner: 'owner', repo: 'repo', pullNumber: 1 }),
-    addPRComment: jest.fn().mockResolvedValue(undefined),
+    createIssueComment: jest.fn().mockResolvedValue(undefined),
+    createReviewComment: jest.fn().mockResolvedValue(undefined),
   };
-  (GitPlatformFactory.createService as jest.Mock).mockReturnValue(
-    mockGitService,
-  );
+  GitPlatformFactory.createService = jest.fn().mockReturnValue(mockGitService);
 
-  return { mockConfigManager, mockProvider, mockVcsProvider };
+  return { mockConfigManager, mockProvider, mockVcsProvider, mockGitService };
 };

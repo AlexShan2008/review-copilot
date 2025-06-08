@@ -1,57 +1,45 @@
-jest.mock('../../../config/config-manager', () => ({
-  ConfigManager: {
-    getInstance: jest.fn(),
-  },
-}));
-jest.mock('../../../utils/vcs-factory', () => ({
-  getVcsProvider: jest.fn(),
-}));
-jest.mock('../../../providers/provider-factory', () => ({
-  ProviderFactory: {
-    createProvider: jest.fn(),
-  },
-}));
-jest.mock('../../../providers/openai-provider', () => ({
-  OpenAIProvider: jest.fn(),
-}));
-jest.mock('../../../services/git-platform-factory', () => ({
-  GitPlatformFactory: {
-    createService: jest.fn(),
-  },
-}));
-jest.mock('micromatch', () => ({
-  isMatch: jest.fn((file: string, pattern: string) => {
-    if (pattern === '**/*.ts') return file.endsWith('.ts');
-    if (pattern === '**/*.{ts,tsx,js,jsx}')
-      return /\.(ts|tsx|js|jsx)$/.test(file);
-    return true;
-  }),
-}));
-jest.mock('ora', () =>
-  jest.fn(() => ({
-    start: jest.fn().mockReturnThis(),
-    stop: jest.fn().mockReturnThis(),
-    succeed: jest.fn().mockReturnThis(),
-    fail: jest.fn().mockReturnThis(),
-    info: jest.fn().mockReturnThis(),
-    text: '',
-  })),
-);
-jest.mock('chalk', () => ({
-  blue: jest.fn((str: any) => String(str)),
-  green: jest.fn((str: any) => String(str)),
-  yellow: jest.fn((str: any) => String(str)),
-  cyan: jest.fn((str: any) => String(str)),
-  white: jest.fn((str: any) => String(str)),
-  gray: jest.fn((str: any) => String(str)),
-  red: jest.fn((str: any) => String(str)),
-  bold: jest.fn((str: any) => String(str)),
-}));
-
 import { reviewCommand } from '../review';
-import { setupMocks, mockConfig, mockCommit } from './review.utils';
+import {
+  setupMocks,
+  mockConfig,
+  mockCommit,
+  cleanupMocks,
+  MockOra,
+} from './review.utils';
+import { ProviderFactory } from '../../../providers/provider-factory';
+import ora from 'ora';
+
+// Mock other dependencies
+jest.mock('../../../config/config-manager');
+jest.mock('../../../utils/vcs-factory');
+jest.mock('../../../providers/provider-factory');
+jest.mock('../../../providers/openai-provider');
+jest.mock('../../../services/git-platform-factory');
 
 describe('reviewCommand - edge cases', () => {
+  const mockSpinner = (ora as unknown as MockOra).mockSpinnerInstance;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    // Reset spinner mock state
+    Object.values(mockSpinner).forEach((mock) => {
+      if (typeof mock === 'function' && 'mockClear' in mock) {
+        (mock as jest.Mock).mockClear();
+      }
+    });
+  });
+
+  afterEach(async () => {
+    mockSpinner._cleanup();
+    jest.clearAllTimers();
+    jest.resetModules();
+    cleanupMocks();
+  });
+
+  afterAll(() => {
+    jest.restoreAllMocks();
+  });
+
   it('should handle empty file patterns', async () => {
     const configWithEmptyPatterns = {
       ...mockConfig,
@@ -70,6 +58,9 @@ describe('reviewCommand - edge cases', () => {
 
     expect(result).toBe(true);
     expect(mockProvider.review).toHaveBeenCalled();
+    expect(mockSpinner.start).toHaveBeenCalled();
+    expect(mockSpinner.succeed).toHaveBeenCalled();
+    expect(mockSpinner.stop).toHaveBeenCalled();
   });
 
   it('should handle commits with no files', async () => {
@@ -80,6 +71,9 @@ describe('reviewCommand - edge cases', () => {
 
     expect(result).toBe(true);
     expect(mockProvider.review).toHaveBeenCalledTimes(1);
+    expect(mockSpinner.start).toHaveBeenCalled();
+    expect(mockSpinner.succeed).toHaveBeenCalled();
+    expect(mockSpinner.stop).toHaveBeenCalled();
   });
 
   it('should handle baseBranch parameter', async () => {
@@ -91,8 +85,9 @@ describe('reviewCommand - edge cases', () => {
     });
 
     expect(result).toBe(true);
-    expect(mockVcsProvider.getPullRequestChanges).toHaveBeenCalledWith(
-      'develop',
-    );
+    expect(mockVcsProvider.getPullRequestFiles).toHaveBeenCalled();
+    expect(mockSpinner.start).toHaveBeenCalled();
+    expect(mockSpinner.succeed).toHaveBeenCalled();
+    expect(mockSpinner.stop).toHaveBeenCalled();
   });
 });

@@ -3,6 +3,7 @@
   "version": "0.4.7",
   "description": "ReviewCopilot - AI-powered code review assistant with customizable prompts",
   "main": "dist/index.js",
+  "type": "module",
   "bin": {
     "review-copilot": "./dist/cli/index.js"
   },
@@ -14,9 +15,9 @@
   "scripts": {
     "build": "tsc",
     "dev": "ts-node -r dotenv/config src/cli/index.ts",
-    "test": "jest --config jest.config.js",
-    "test:coverage": "jest --config jest.config.js --coverage",
-    "test:watch": "jest --config jest.config.js --watch",
+    "test": "jest --config jest.config.mjs",
+    "test:coverage": "jest --config jest.config.mjs --coverage",
+    "test:watch": "jest --config jest.config.mjs --watch",
     "lint": "eslint 'src/**/*.{js,ts}'",
     "format": "prettier --write 'src/**/*.{js,ts}'",
     "prepare": "husky install",
