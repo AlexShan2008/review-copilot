@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.8](https://github.com/AlexShan2008/review-copilot/compare/v0.4.7...v0.4.8) (2025-06-08)
+
+
+### Bug Fixes
+
+* exports is not defined in ES module scope ([86cdc64](https://github.com/AlexShan2008/review-copilot/commit/86cdc641b569f7e757d97d9baad56430f5e4a7c4))
+* remove invalid inReplyTo parameter in review comments ([7e13629](https://github.com/AlexShan2008/review-copilot/commit/7e13629567de83002a44156d31f3b68ed0dfbd82))
+* review-basic.test and review.edge-cases.test failing ([3e1e382](https://github.com/AlexShan2008/review-copilot/commit/3e1e382d20a1675e4edf0a9f12621fc66688c324))
+
+
+### Tests
+
+* fix file-content-provider.test failing ([9bab182](https://github.com/AlexShan2008/review-copilot/commit/9bab182f39ceddc901bb77ac2b4885e9665e68bc))
+* fix review.error-handling.test failing ([b60f48a](https://github.com/AlexShan2008/review-copilot/commit/b60f48ad26052cf013ff2f80956d18c096673fff))
+* improve ConfigManager error handling and test stability ([d9655d0](https://github.com/AlexShan2008/review-copilot/commit/d9655d0473fba0580cd90779a9dd9f24f84a932d))
+* improve test stability and mock handling ([73e9410](https://github.com/AlexShan2008/review-copilot/commit/73e9410c2dec6ffed218fe7da0b8dba60a99169f))
+
 ### [0.4.7](https://github.com/AlexShan2008/review-copilot/compare/v0.4.6...v0.4.7) (2025-06-08)
 
 
