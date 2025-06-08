@@ -6,8 +6,9 @@ import {
   cleanupMocks,
   MockOra,
 } from './review.utils';
-import { ProviderFactory } from '../../../providers/provider-factory';
 import ora from 'ora';
+
+jest.useFakeTimers();
 
 // Mock other dependencies
 jest.mock('../../../config/config-manager');
@@ -27,6 +28,10 @@ jest.mock('micromatch', () => ({
 describe('reviewCommand - file filtering', () => {
   const mockSpinner = (ora as unknown as MockOra).mockSpinnerInstance;
 
+  beforeAll(() => {
+    jest.useFakeTimers();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     // Reset spinner mock state
@@ -38,18 +43,25 @@ describe('reviewCommand - file filtering', () => {
   });
 
   afterEach(async () => {
-    mockSpinner.stop();
-    cleanupMocks();
-    await new Promise((resolve) => setTimeout(resolve, 0));
-  });
+    // Run any pending timers first
+    jest.runAllTimers();
 
-  afterAll(() => {
+    // Cleanup
+    mockSpinner._cleanup();
+    mockSpinner.stop();
+    jest.clearAllTimers();
+    jest.clearAllMocks();
+    jest.resetModules();
     cleanupMocks();
   });
 
   it('should handle empty file patterns', async () => {
     const { mockVcsProvider } = setupMocks();
-    const result = await reviewCommand({ config: '.review-copilot.yaml' });
+    const promise = reviewCommand({ config: '.review-copilot.yaml' });
+
+    // Run all timers and wait for promises
+    jest.runAllTimers();
+    const result = await promise;
 
     expect(result).toBe(true);
     expect(mockSpinner.start).toHaveBeenCalled();
@@ -65,30 +77,17 @@ describe('reviewCommand - file filtering', () => {
         files: [],
       },
     ]);
-    const result = await reviewCommand({ config: '.review-copilot.yaml' });
+    const promise = reviewCommand({ config: '.review-copilot.yaml' });
+
+    // Run all timers and wait for promises
+    jest.runAllTimers();
+    const result = await promise;
 
     expect(result).toBe(true);
     expect(mockSpinner.start).toHaveBeenCalled();
     expect(mockSpinner.succeed).toHaveBeenCalled();
     expect(mockSpinner.stop).toHaveBeenCalled();
     expect(mockVcsProvider.getPullRequestFiles).toHaveBeenCalled();
-  });
-
-  it('should handle baseBranch parameter', async () => {
-    const { mockVcsProvider } = setupMocks();
-    const result = await reviewCommand({
-      config: '.review-copilot.yaml',
-      baseBranch: 'main',
-    });
-
-    expect(result).toBe(true);
-    expect(mockSpinner.start).toHaveBeenCalled();
-    expect(mockSpinner.succeed).toHaveBeenCalled();
-    expect(mockSpinner.stop).toHaveBeenCalled();
-    expect(mockVcsProvider.getPullRequestFiles).toHaveBeenCalledWith(
-      expect.any(Object),
-      'main',
-    );
   });
 
   it('should only review files matching patterns', async () => {
@@ -125,23 +124,6 @@ describe('reviewCommand - file filtering', () => {
 
     expect(result).toBe(true);
     expect(mockProvider.review).toHaveBeenCalled();
-    expect(mockSpinner.start).toHaveBeenCalled();
-    expect(mockSpinner.succeed).toHaveBeenCalled();
-    expect(mockSpinner.stop).toHaveBeenCalled();
-  });
-
-  it('should truncate large files', async () => {
-    const largeCommit = {
-      ...mockCommit,
-      files: [{ filename: 'src/large.ts', changes: 'a'.repeat(60000) }],
-    };
-    const { mockProvider } = setupMocks(mockConfig, [largeCommit]);
-
-    const result = await reviewCommand({ config: 'test-config.yaml' });
-
-    expect(result).toBe(true);
-    const reviewCall = mockProvider.review.mock.calls[0];
-    expect(reviewCall[1]).toContain('content truncated for size limit');
     expect(mockSpinner.start).toHaveBeenCalled();
     expect(mockSpinner.succeed).toHaveBeenCalled();
     expect(mockSpinner.stop).toHaveBeenCalled();

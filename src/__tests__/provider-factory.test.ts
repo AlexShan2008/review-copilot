@@ -1,12 +1,31 @@
 import { ProviderFactory } from '../providers/provider-factory';
-import { OpenAIProvider } from '../providers/openai-provider';
 import { DeepSeekProvider } from '../providers/deepseek-provider';
 import {
   ProviderFactoryConfig,
   AIProviderConfig as ProviderFactoryAIProviderConfig,
+  IAIProvider,
 } from '../providers/provider.types';
+import OpenAI from 'openai';
+import chalk from 'chalk';
+
+// Mock chalk
+jest.mock('chalk', () => ({
+  blue: jest.fn((str) => str),
+  green: jest.fn((str) => str),
+  yellow: jest.fn((str) => str),
+  red: jest.fn((str) => str),
+  gray: jest.fn((str) => str),
+}));
+
+// Mock OpenAI client with a simpler implementation
+jest.mock('openai', () => {
+  return jest.fn().mockImplementation(() => ({}));
+});
 
 describe('ProviderFactory', () => {
+  let provider: IAIProvider;
+  let mockOpenAI: jest.MockedClass<typeof OpenAI>;
+  let mockChalk: jest.Mocked<typeof chalk>;
   const mockConfig: ProviderFactoryConfig = {
     providers: {
       openai: {
@@ -45,9 +64,42 @@ describe('ProviderFactory', () => {
     customReviewPoints: [],
   };
 
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockOpenAI = OpenAI as jest.MockedClass<typeof OpenAI>;
+    mockChalk = chalk as jest.Mocked<typeof chalk>;
+  });
+
+  afterEach(() => {
+    if (provider) {
+      // @ts-ignore - accessing private property for cleanup
+      if (provider.client) {
+        // @ts-ignore - accessing private property for cleanup
+        provider.client = null;
+      }
+      provider = null as any;
+    }
+    jest.clearAllMocks();
+  });
+
+  afterAll(() => {
+    jest.restoreAllMocks();
+  });
+
   it('should create OpenAI provider when OpenAI is enabled', () => {
-    const provider = ProviderFactory.createProvider(mockConfig);
-    expect(provider).toBeInstanceOf(OpenAIProvider);
+    provider = ProviderFactory.createProvider(mockConfig);
+    expect(provider.constructor.name).toBe('OpenAIProvider');
+    expect(mockOpenAI).toHaveBeenCalledWith({
+      apiKey: (mockConfig.providers.openai as ProviderFactoryAIProviderConfig)
+        .apiKey,
+      baseURL: (mockConfig.providers.openai as ProviderFactoryAIProviderConfig)
+        .baseURL,
+      defaultHeaders: {
+        'Content-Type': 'application/json',
+      },
+      timeout: 60000,
+    });
+    expect(mockChalk.blue).toHaveBeenCalled();
   });
 
   it('should create DeepSeek provider when DeepSeek is enabled', () => {
