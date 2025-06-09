@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.9](https://github.com/AlexShan2008/review-copilot/compare/v0.4.8...v0.4.9) (2025-06-09)
+
+
+### Refactors
+
+* improve review output formatting and centralize logging ([7655f91](https://github.com/AlexShan2008/review-copilot/commit/7655f912c45723af1717b899f0c1b619ad643152))
+
+
+### Tests
+
+* update test cases ([a847c03](https://github.com/AlexShan2008/review-copilot/commit/a847c03c6b800ce6d441dbe06ac145090f79e9e3))
+
 ### [0.4.8](https://github.com/AlexShan2008/review-copilot/compare/v0.4.7...v0.4.8) (2025-06-08)
 
 
