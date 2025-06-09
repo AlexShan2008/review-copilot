@@ -78,7 +78,7 @@ export function formatReviewResultsAsMarkdown(
     context.commits.forEach((commit: any) => {
       const sha = commit.hash;
       const url = `https://github.com/${context.prDetails.owner}/${context.prDetails.repo}/commit/${sha}`;
-      comment += `- [[33m${sha.slice(0, 7)}[0m](${url}): ${commit.message}\n`;
+      comment += `- [${sha.slice(0, 7)}](${url}): ${commit.message}\n`;
     });
     comment += '\n';
   }
