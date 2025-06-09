@@ -94,4 +94,61 @@ describe('reviewCommand - basic functionality', () => {
     expect(mockSpinner.succeed).toHaveBeenCalled();
     expect(mockSpinner.stop).toHaveBeenCalled();
   });
+
+  it('should format branch name in outputReviewResults', async () => {
+    const { formatReviewResultsAsMarkdown } = require('../helpers');
+
+    const results = {
+      branchName: [
+        {
+          success: true,
+          suggestions: [
+            { message: 'Branch name is good', reviewType: 'general' },
+          ],
+          error: undefined,
+        },
+      ],
+    };
+    const markdown = formatReviewResultsAsMarkdown(results.branchName, {
+      type: 'branchName',
+      branchName: 'feature/test',
+    });
+    expect(markdown).toContain('**Branch:** `feature/test`');
+    expect(markdown).toContain('Branch name is good');
+  });
+
+  it('should format commit SHA as link in outputReviewResults', async () => {
+    const { formatReviewResultsAsMarkdown } = require('../helpers');
+    const prDetails = { owner: 'owner', repo: 'repo', pullNumber: 1 };
+    const commits = [
+      {
+        hash: 'abc1234',
+        message: 'feat: add feature',
+        author: 'Test',
+        date: '2024-01-01',
+      },
+      {
+        hash: 'def5678',
+        message: 'fix: bug fix',
+        author: 'Test',
+        date: '2024-01-02',
+      },
+    ];
+    const results = [
+      {
+        success: true,
+        suggestions: [{ message: 'Good commit', reviewType: 'general' }],
+        error: undefined,
+      },
+    ];
+    const markdown = formatReviewResultsAsMarkdown(results, {
+      type: 'commitMessages',
+      commits,
+      prDetails,
+    });
+    expect(markdown).toContain('[abc1234](');
+    expect(markdown).toContain('[def5678](');
+    expect(markdown).toContain('feat: add feature');
+    expect(markdown).toContain('fix: bug fix');
+  });
 });
