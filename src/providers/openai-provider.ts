@@ -1,9 +1,9 @@
 import { AIProviderConfig } from '../types/review.types';
 import { BaseProvider } from './base-provider';
-import chalk from 'chalk';
 import { ChatCompletionMessageParam } from 'openai/resources';
 import util from 'util';
-import { SYSTEM_MESSAGES, ReviewLanguage } from '../constants/ai-messages';
+import { SYSTEM_MESSAGES } from '../constants/ai-messages';
+import { Logger } from '../utils/logger';
 
 export class OpenAIProvider extends BaseProvider {
   constructor(config: AIProviderConfig) {
@@ -12,19 +12,16 @@ export class OpenAIProvider extends BaseProvider {
 
   async review(prompt: string, content: string): Promise<string> {
     try {
-      console.log(chalk.blue('\n=== OpenAI Review Request ==='));
-      console.log(chalk.gray('Model:'), this.config.model);
-      console.log(chalk.gray('BaseURL:'), this.config.baseURL);
-      console.log(chalk.gray('API Key:'), '***[REDACTED]***');
-      console.log(chalk.gray('Prompt:'), prompt);
-      console.log(chalk.gray('Content Length:'), content.length);
-      console.log(
-        chalk.gray('Content Preview:'),
-        content.slice(0, 100) + '...',
-      );
+      Logger.info('\n=== OpenAI Review Request ===');
+      Logger.gray('Model: ' + this.config.model);
+      Logger.gray('BaseURL: ' + this.config.baseURL);
+      Logger.gray('API Key: ***[REDACTED]***');
+      Logger.gray('Prompt: ' + prompt);
+      Logger.gray('Content Length: ' + content.length);
+      Logger.gray('Content Preview: ' + content.slice(0, 100) + '...');
 
       if (!content.trim()) {
-        console.log(chalk.yellow('Warning: Empty content provided'));
+        Logger.warning('Warning: Empty content provided');
         return 'No content to review.';
       }
 
@@ -46,126 +43,111 @@ export class OpenAIProvider extends BaseProvider {
         stream: false as const,
       };
 
-      console.log(chalk.blue('\n=== Request Details ==='));
-      console.log(
-        chalk.gray('Request Body:'),
-        util.inspect(
-          {
-            ...requestBody,
-            messages: requestBody.messages.map((msg) => ({
-              ...msg,
-              content: msg.content
-                ? msg.content.length > 100
-                  ? msg.content.slice(0, 100) + '...'
-                  : msg.content
-                : '[NO CONTENT]',
-            })),
-          },
-          {
-            colors: true,
-            depth: 2,
-            maxArrayLength: 2,
-          },
-        ),
+      Logger.info('\n=== Request Details ===');
+      Logger.gray(
+        'Request Body: ' +
+          util.inspect(
+            {
+              ...requestBody,
+              messages: requestBody.messages.map((msg) => ({
+                ...msg,
+                content: msg.content
+                  ? msg.content.length > 100
+                    ? msg.content.slice(0, 100) + '...'
+                    : msg.content
+                  : '[NO CONTENT]',
+              })),
+            },
+            {
+              colors: true,
+              depth: 2,
+              maxArrayLength: 2,
+            },
+          ),
       );
 
-      console.log(chalk.blue('\n=== Making API Call ==='));
-      console.log(chalk.gray('Request Config:'), {
-        baseURL: this.config.baseURL,
-        model: requestBody.model,
-      });
+      Logger.info('\n=== Making API Call ===');
+      Logger.gray(
+        'Request Config: ' +
+          JSON.stringify({
+            baseURL: this.config.baseURL,
+            model: requestBody.model,
+          }),
+      );
 
       let response;
       try {
         response = await this.client.chat.completions.create(requestBody);
       } catch (apiError: any) {
-        console.error(chalk.red('\n=== API Call Failed ==='));
+        Logger.error('\n=== API Call Failed ===');
         if (apiError.response) {
-          console.error(
-            chalk.gray('Response Type:'),
-            apiError.response.headers?.['content-type'] || 'unknown',
+          Logger.gray(
+            'Response Type: ' +
+              (apiError.response.headers?.['content-type'] || 'unknown'),
           );
-          console.error(
-            chalk.gray('Response Status:'),
-            apiError.response.status,
+          Logger.gray('Response Status: ' + apiError.response.status);
+          Logger.gray(
+            'Response Headers: ' + util.inspect(apiError.response.headers),
           );
-          console.error(
-            chalk.gray('Response Headers:'),
-            apiError.response.headers,
-          );
-          console.error(chalk.gray('Response Body:'), apiError.response.data);
+          Logger.gray('Response Body: ' + util.inspect(apiError.response.data));
 
           if (
             typeof apiError.response.data === 'string' &&
             apiError.response.data.includes('<!DOCTYPE html>')
           ) {
-            console.error(
-              chalk.red(
-                '\nReceived HTML response instead of JSON. This usually indicates:',
-              ),
+            Logger.error(
+              '\nReceived HTML response instead of JSON. This usually indicates:',
             );
-            console.error(
-              chalk.yellow(
-                '1. The baseURL might be incorrect or pointing to a web interface',
-              ),
+            Logger.warning(
+              '1. The baseURL might be incorrect or pointing to a web interface',
             );
-            console.error(
-              chalk.yellow(
-                '2. The proxy server might be returning an auth/error page',
-              ),
+            Logger.warning(
+              '2. The proxy server might be returning an auth/error page',
             );
-            console.error(
-              chalk.yellow(
-                '3. The API endpoint might not be properly configured',
-              ),
+            Logger.warning(
+              '3. The API endpoint might not be properly configured',
             );
-            console.error(chalk.yellow('\nPlease verify:'));
-            console.error(
-              chalk.yellow(
-                '- The baseURL is a direct API endpoint (should end with /v1)',
-              ),
+            Logger.warning('\nPlease verify:');
+            Logger.warning(
+              '- The baseURL is a direct API endpoint (should end with /v1)',
             );
-            console.error(
-              chalk.yellow(
-                '- Your API key is correctly set and has proper permissions',
-              ),
+            Logger.warning(
+              '- Your API key is correctly set and has proper permissions',
             );
-            console.error(
-              chalk.yellow(
-                "- If using a proxy, ensure it's correctly forwarding API requests",
-              ),
+            Logger.warning(
+              "- If using a proxy, ensure it's correctly forwarding API requests",
             );
           }
         }
         throw apiError;
       }
 
-      console.log(chalk.blue('\n=== Response Details ==='));
-      console.log(
-        chalk.gray('Response Object:'),
-        util.inspect(response, {
-          colors: true,
-          depth: null,
-          maxArrayLength: null,
-        }),
+      Logger.info('\n=== Response Details ===');
+      Logger.gray(
+        'Response Object: ' +
+          util.inspect(response, {
+            colors: true,
+            depth: null,
+            maxArrayLength: null,
+          }),
       );
 
       let parsedResponse;
       if (typeof response === 'string') {
         try {
           parsedResponse = JSON.parse(response);
-          console.log(chalk.blue('\n=== Parsed Response ==='));
-          console.log(
-            chalk.gray('Parsed Response:'),
-            util.inspect(parsedResponse, {
-              colors: true,
-              depth: null,
-              maxArrayLength: null,
-            }),
+          Logger.info('\n=== Parsed Response ===');
+          Logger.gray(
+            'Parsed Response: ' +
+              util.inspect(parsedResponse, {
+                colors: true,
+                depth: null,
+                maxArrayLength: null,
+              }),
           );
         } catch (parseError) {
-          console.error(chalk.red('\nError: Failed to parse response string'));
-          console.error(chalk.gray('Parse Error:'), parseError);
+          Logger.error('\nError: Failed to parse response string');
+          Logger.gray('Parse Error: ' + util.inspect(parseError));
           throw new Error('Failed to parse OpenAI API response');
         }
       } else {
@@ -177,42 +159,42 @@ export class OpenAIProvider extends BaseProvider {
         !parsedResponse.choices ||
         parsedResponse.choices.length === 0
       ) {
-        console.error(chalk.red('\nError: Invalid Response Format'));
-        console.error(
-          chalk.gray('Response:'),
-          util.inspect(parsedResponse, { colors: true, depth: null }),
+        Logger.error('\nError: Invalid Response Format');
+        Logger.gray(
+          'Response: ' +
+            util.inspect(parsedResponse, { colors: true, depth: null }),
         );
         throw new Error('Invalid response format from OpenAI API');
       }
 
       const result = parsedResponse.choices[0]?.message?.content;
       if (!result) {
-        console.error(chalk.red('\nError: Empty Response Content'));
-        console.error(
-          chalk.gray('Choice Object:'),
-          util.inspect(parsedResponse.choices[0], {
-            colors: true,
-            depth: null,
-          }),
+        Logger.error('\nError: Empty Response Content');
+        Logger.gray(
+          'Choice Object: ' +
+            util.inspect(parsedResponse.choices[0], {
+              colors: true,
+              depth: null,
+            }),
         );
         throw new Error('Empty response content from OpenAI API');
       }
 
-      console.log(chalk.green('\n=== Success ==='));
-      console.log(chalk.gray('Response Content:'), result);
+      Logger.success('\n=== Success ===');
+      Logger.gray('Response Content: ' + result);
 
       return result;
     } catch (error) {
-      console.error(chalk.red('\n=== Error Details ==='));
-      console.error(
-        chalk.red('Type:'),
-        error instanceof Error ? error.constructor.name : typeof error,
+      Logger.error('\n=== Error Details ===');
+      Logger.error(
+        'Type: ' +
+          (error instanceof Error ? error.constructor.name : typeof error),
       );
 
       if (error instanceof Error) {
-        console.error(chalk.red('Name:'), error.name);
-        console.error(chalk.red('Message:'), error.message);
-        console.error(chalk.red('Stack:'), error.stack);
+        Logger.error('Name: ' + error.name);
+        Logger.error('Message: ' + error.message);
+        Logger.error('Stack: ' + error.stack);
 
         const errorMessage = error.message;
         if (errorMessage.includes('401')) {
@@ -236,16 +218,16 @@ export class OpenAIProvider extends BaseProvider {
         // Log any additional error properties
         const errorObj = error as any;
         if (errorObj.response) {
-          console.error(chalk.red('\nAPI Response Error:'));
-          console.error(chalk.gray('Status:'), errorObj.response.status);
-          console.error(
-            chalk.gray('Status Text:'),
-            errorObj.response.statusText,
-          );
-          console.error(chalk.gray('Headers:'), errorObj.response.headers);
-          console.error(
-            chalk.gray('Data:'),
-            util.inspect(errorObj.response.data, { colors: true, depth: null }),
+          Logger.error('\nAPI Response Error:');
+          Logger.gray('Status: ' + errorObj.response.status);
+          Logger.gray('Status Text: ' + errorObj.response.statusText);
+          Logger.gray('Headers: ' + util.inspect(errorObj.response.headers));
+          Logger.gray(
+            'Data: ' +
+              util.inspect(errorObj.response.data, {
+                colors: true,
+                depth: null,
+              }),
           );
         }
       }

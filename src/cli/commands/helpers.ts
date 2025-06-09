@@ -9,6 +9,7 @@ import {
 import { VcsProvider } from '../../utils/git-service.interface';
 import { CodeReviewResult } from '../../providers/provider.types';
 import { CreateReviewCommentParams } from '../../services/services.types';
+import { Logger } from '../../utils/logger';
 
 export interface ReviewResults {
   branchName?: CodeReviewResult[];
@@ -52,12 +53,35 @@ export function printSingleReviewResult(result: CodeReviewResult): void {
 
 export function formatReviewResultsAsMarkdown(
   results: CodeReviewResult[],
+  context?: {
+    type?: string;
+    branchName?: string;
+    commits?: any[];
+    prDetails?: any;
+  },
 ): string {
   if (!Array.isArray(results) || results.length === 0) {
-    return '## 🤖 ReviewCopilot Report\n\n✅ No issues found in this review.\n';
+    return '✅ No issues found in this review.\n';
   }
 
-  let comment = '## 🤖 ReviewCopilot Report\n\n';
+  let comment = '';
+
+  if (context?.type === 'branchName' && context.branchName) {
+    comment += `**Branch:** \`${context.branchName}\`\n\n`;
+  }
+
+  if (
+    context?.type === 'commitMessages' &&
+    context.commits &&
+    context.prDetails
+  ) {
+    context.commits.forEach((commit: any) => {
+      const sha = commit.hash;
+      const url = `https://github.com/${context.prDetails.owner}/${context.prDetails.repo}/commit/${sha}`;
+      comment += `- [[33m${sha.slice(0, 7)}[0m](${url}): ${commit.message}\n`;
+    });
+    comment += '\n';
+  }
 
   const resultsWithIssues = results.filter(
     (result) =>
@@ -70,12 +94,12 @@ export function formatReviewResultsAsMarkdown(
     resultsWithIssues.forEach((result) => {
       if (result.suggestions.length > 0) {
         result.suggestions.forEach((suggestion) => {
-          comment += `- ${suggestion.message}\n`;
+          comment += `${suggestion.message}\n`;
         });
       }
 
       if (result.error) {
-        comment += `- 🚨 ${result.error.message}\n`;
+        comment += `🚨 ${result.error.message}\n`;
       }
 
       comment += '\n';
@@ -88,19 +112,21 @@ export function formatReviewResultsAsMarkdown(
 export async function outputReviewResults(
   context: ReviewContext,
   results: ReviewResults,
+  extraContext?: { branchName?: string; commits?: any[] },
 ): Promise<void> {
   context.spinner.text = 'Processing results...';
 
   if (EnvironmentHelpers.isCI) {
-    await outputToCIPlatform(context, results);
+    await outputToCIPlatform(context, results, extraContext);
   } else {
-    await outputToTerminal(results);
+    await outputToTerminal(results, extraContext);
   }
 }
 
 export async function outputToCIPlatform(
   context: ReviewContext,
   results: ReviewResults,
+  extraContext?: { branchName?: string; commits?: any[] },
 ): Promise<void> {
   context.spinner.text = 'Posting review comments...';
 
@@ -109,7 +135,10 @@ export async function outputToCIPlatform(
   }
 
   if (results.branchName) {
-    const body = formatReviewResultsAsMarkdown(results.branchName);
+    const body = formatReviewResultsAsMarkdown(results.branchName, {
+      type: 'branchName',
+      branchName: extraContext?.branchName,
+    });
 
     await context.gitService.createIssueComment({
       owner: context.prDetails.owner,
@@ -120,7 +149,11 @@ export async function outputToCIPlatform(
   }
 
   if (results.commitMessages) {
-    const body = formatReviewResultsAsMarkdown(results.commitMessages);
+    const body = formatReviewResultsAsMarkdown(results.commitMessages, {
+      type: 'commitMessages',
+      commits: extraContext?.commits,
+      prDetails: context.prDetails,
+    });
 
     await context.gitService.createIssueComment({
       owner: context.prDetails.owner,
@@ -225,44 +258,78 @@ export async function outputToCIPlatform(
   }
 }
 
-export async function outputToTerminal(results: ReviewResults): Promise<void> {
+export async function outputToTerminal(
+  results: ReviewResults,
+  extraContext?: { branchName?: string; commits?: any[]; prDetails?: any },
+): Promise<void> {
   let hasAnyResults = false;
 
   if (results.branchName) {
-    console.log(chalk.blue('\n🌿 Branch Name Review Results:'));
-    console.log('─'.repeat(50));
-    printReviewResultsToTerminal(results.branchName);
+    Logger.info('\n🌿 Branch Name Review Results:');
+    Logger.divider();
+    printReviewResultsToTerminal(results.branchName, {
+      type: 'branchName',
+      branchName: extraContext?.branchName,
+    });
     hasAnyResults = true;
   }
 
   if (results.commitMessages && results.commitMessages.length > 0) {
-    console.log(chalk.blue('\n📝 Commit Messages Review Results:'));
-    console.log('─'.repeat(50));
-    printReviewResultsToTerminal(results.commitMessages);
+    Logger.info('\n📝 Commit Messages Review Results:');
+    Logger.divider();
+    printReviewResultsToTerminal(results.commitMessages, {
+      type: 'commitMessages',
+      commits: extraContext?.commits,
+      prDetails: extraContext?.prDetails,
+    });
     hasAnyResults = true;
   }
 
   if (results.codeChanges) {
-    console.log(chalk.blue('\n🔍 Code Changes Review Results:'));
-    console.log('─'.repeat(50));
+    Logger.info('\n🔍 Code Changes Review Results:');
+    Logger.divider();
     printReviewResultsToTerminal(results.codeChanges);
     hasAnyResults = true;
   }
 
   if (!hasAnyResults) {
-    console.log(chalk.gray('\n📋 No review results to display.'));
+    Logger.gray('\n📋 No review results to display.');
   }
 }
 
 export function printReviewResultsToTerminal(
   results: CodeReviewResult[],
+  context?: {
+    type?: string;
+    branchName?: string;
+    commits?: any[];
+    prDetails?: any;
+  },
 ): void {
   if (!Array.isArray(results) || results.length === 0) {
-    console.log(chalk.gray('\n📝 No review results to display.\n'));
+    Logger.gray('\n📝 No review results to display.\n');
     return;
   }
 
-  console.log('\n📝 Review Results:\n');
+  if (context?.type === 'branchName' && context.branchName) {
+    Logger.success(`Branch: ${context.branchName}`);
+  }
+
+  if (
+    context?.type === 'commitMessages' &&
+    context.commits &&
+    context.prDetails
+  ) {
+    context.commits.forEach((commit: any) => {
+      const sha = commit.hash;
+      const url = `https://github.com/${context.prDetails.owner}/${context.prDetails.repo}/commit/${sha}`;
+      Logger.yellow(`[${sha.slice(0, 7)}] ${commit.message}`);
+      Logger.gray(url);
+    });
+    Logger.white('');
+  }
+
+  Logger.info('\n📝 Review Results:\n');
 
   results.forEach((result) => {
     printSingleReviewResult(result);

@@ -81,28 +81,36 @@ export async function reviewCommand(
 
     if (context.config.rules.branchName.enabled) {
       const results = await reviewBranchName(context);
-      await outputReviewResults(context, {
-        branchName: [
-          {
-            success: results.success,
-            suggestions: results.suggestions,
-            error: results.error,
-          },
-        ],
-      });
+      await outputReviewResults(
+        context,
+        {
+          branchName: [
+            {
+              success: results.success,
+              suggestions: results.suggestions,
+              error: results.error,
+            },
+          ],
+        },
+        { branchName: results.branchName },
+      );
     }
 
     if (context.config.rules.commitMessage.enabled) {
       const results = await reviewCommitMessages(context);
-      await outputReviewResults(context, {
-        commitMessages: [
-          {
-            success: results.success,
-            suggestions: results.suggestions,
-            error: results.error,
-          },
-        ],
-      });
+      await outputReviewResults(
+        context,
+        {
+          commitMessages: [
+            {
+              success: results.success,
+              suggestions: results.suggestions,
+              error: results.error,
+            },
+          ],
+        },
+        { commits: results.commits },
+      );
     }
 
     if (context.config.rules.codeChanges.enabled) {
@@ -167,7 +175,7 @@ async function withReviewErrorHandling(
 
 export async function reviewBranchName(
   context: ReviewContext,
-): Promise<CodeReviewResult> {
+): Promise<CodeReviewResult & { branchName?: string }> {
   return withReviewErrorHandling(async () => {
     context.spinner.text = 'Reviewing branch name...';
     const branchName = await context.vcs.getCurrentBranchName();
@@ -179,19 +187,22 @@ export async function reviewBranchName(
       context.config.rules.branchName.prompt,
       branchName,
     );
-    return buildSuccessResult([{ message: result, reviewType: 'general' }]);
+    return {
+      ...buildSuccessResult([{ message: result, reviewType: 'general' }]),
+      branchName,
+    };
   }, 'Unknown error in branch name review');
 }
 
 export async function reviewCommitMessages(
   context: ReviewContext,
-): Promise<CodeReviewResult> {
+): Promise<CodeReviewResult & { commits?: any[] }> {
   return withReviewErrorHandling(async () => {
     context.spinner.text = 'Getting commit messages...';
     const commits = await context.vcs.getPullRequestCommits();
     if (!Array.isArray(commits) || commits.length === 0) {
       Logger.gray('\nNo commit messages to review.');
-      return buildSuccessResult([]);
+      return { ...buildSuccessResult([]), commits: [] };
     }
 
     Logger.info(`\nFound ${commits.length} commit message(s) to review:`);
@@ -224,13 +235,28 @@ export async function reviewCommitMessages(
         );
       }
     }
-    return buildSuccessResult(results.flatMap((result) => result.suggestions));
+    return {
+      ...buildSuccessResult(results.flatMap((result) => result.suggestions)),
+      commits,
+    };
   }, 'Failed to get commit messages');
 }
 
 export async function reviewCodeChanges(
   context: ReviewContext,
 ): Promise<CodeReviewResult> {
+  if (!context.prDetails) {
+    Logger.warning(
+      'Code changes review is only available in PR/CI environment.',
+    );
+    return buildSuccessResult([
+      {
+        message: 'Code changes review is only available in PR/CI environment.',
+        reviewType: 'general',
+      },
+    ]);
+  }
+
   return withReviewErrorHandling(async () => {
     context.spinner.text = 'Getting code changes...';
     const pullRequestReviewInfo = await context.vcs.getPullRequestFiles();
