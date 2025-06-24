@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [0.4.10](https://github.com/AlexShan2008/review-copilot/compare/v0.4.9...v0.4.10) (2025-06-24)
+
+
+### Documentation
+
+* improve README readability and update links for better user experience ([3c50654](https://github.com/AlexShan2008/review-copilot/commit/3c506543fd77729974b7df54e906e154e0489ad9))
+
 ### [0.4.9](https://github.com/AlexShan2008/review-copilot/compare/v0.4.8...v0.4.9) (2025-06-09)
 
 
