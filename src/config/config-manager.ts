@@ -110,7 +110,15 @@ export class ConfigManager {
 
   private replaceEnvVariables(obj: any): any {
     if (typeof obj === 'string') {
-      return obj.replace(/\${([^}]+)}/g, (_, key) => process.env[key] || '');
+      return obj.replace(/\${([^}]+)}/g, (_, key) => {
+        const value = process.env[key];
+        if (value === undefined || value === '') {
+          console.warn(
+            `Warning: Environment variable ${key} is not set or is empty`,
+          );
+        }
+        return value || '';
+      });
     }
 
     if (Array.isArray(obj)) {

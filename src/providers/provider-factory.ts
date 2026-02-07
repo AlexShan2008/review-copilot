@@ -4,7 +4,7 @@ import {
   ProviderFactoryConfig,
   AIProviderConfig as ProviderFactoryAIProviderConfig,
 } from './provider.types';
-import { AIProviderConfig } from '../types/review.types';
+import { AIProviderConfig, AI_PROVIDER_CONFIG } from '../types/review.types';
 import { OpenAIProvider } from './openai-provider';
 import { DeepSeekProvider } from './deepseek-provider';
 import chalk from 'chalk';
@@ -50,11 +50,12 @@ export class ProviderFactory {
       (field) => !providerConfig[field],
     );
     if (missingFields.length > 0) {
-      throw new Error(
-        `Missing required fields for ${providerName} provider: ${missingFields.join(
-          ', ',
-        )}`,
-      );
+      const providerKey = providerName.toLowerCase() as keyof typeof AI_PROVIDER_CONFIG;
+      const envVarName = AI_PROVIDER_CONFIG[providerKey]?.envKey || 'API_KEY';
+      const errorMessage = missingFields.includes('apiKey')
+        ? `Missing required fields for ${providerName} provider: ${missingFields.join(', ')}. Please set the ${envVarName} environment variable.`
+        : `Missing required fields for ${providerName} provider: ${missingFields.join(', ')}`;
+      throw new Error(errorMessage);
     }
 
     console.log(chalk.blue(`Using ${providerName} as AI provider`));

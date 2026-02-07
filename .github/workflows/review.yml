@@ -48,6 +48,39 @@ jobs:
       - name: Build
         run: pnpm run build
 
+      - name: Validate API Keys
+        run: |
+          echo "Checking API keys..."
+          if [ -n "$AI_API_KEY_DEEPSEEK" ]; then
+            echo "✓ AI_API_KEY_DEEPSEEK is set (length: ${#AI_API_KEY_DEEPSEEK})"
+          else
+            echo "✗ AI_API_KEY_DEEPSEEK is not set"
+          fi
+          if [ -n "$AI_API_KEY_OPENAI" ]; then
+            echo "✓ AI_API_KEY_OPENAI is set (length: ${#AI_API_KEY_OPENAI})"
+          else
+            echo "✗ AI_API_KEY_OPENAI is not set"
+          fi
+          if [ -z "$AI_API_KEY_OPENAI" ] && [ -z "$AI_API_KEY_DEEPSEEK" ]; then
+            echo "❌ Error: At least one API key must be set (AI_API_KEY_OPENAI or AI_API_KEY_DEEPSEEK)"
+            echo "Please set the required secrets in your repository settings."
+            exit 1
+          fi
+        env:
+          AI_API_KEY_OPENAI: ${{ secrets.AI_API_KEY_OPENAI }}
+          AI_API_KEY_DEEPSEEK: ${{ secrets.AI_API_KEY_DEEPSEEK }}
+
+      - name: Debug Environment Variables
+        run: |
+          echo "Environment variables check:"
+          echo "AI_API_KEY_DEEPSEEK is set: $([ -n "$AI_API_KEY_DEEPSEEK" ] && echo 'yes' || echo 'no')"
+          echo "AI_API_KEY_OPENAI is set: $([ -n "$AI_API_KEY_OPENAI" ] && echo 'yes' || echo 'no')"
+          echo "GITHUB_TOKEN is set: $([ -n "$GITHUB_TOKEN" ] && echo 'yes' || echo 'no')"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AI_API_KEY_OPENAI: ${{ secrets.AI_API_KEY_OPENAI }}
+          AI_API_KEY_DEEPSEEK: ${{ secrets.AI_API_KEY_DEEPSEEK }}
+
       - name: Run ReviewCopilot
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
