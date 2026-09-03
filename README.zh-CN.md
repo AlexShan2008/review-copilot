@@ -10,8 +10,11 @@
   <strong>基于 AI 的 GitHub 代码审查助手，支持自定义规则和多提供商</strong>
 </p>
 
+> **⚠️ 测试版（Beta）**：ReviewCopilot 目前正在积极开发中，API、配置文件格式以及各提供商的行为可能会在小版本之间发生变化。生产环境请锁定具体版本号，如遇到问题欢迎反馈。
+
 <p align="center">
   <a href="https://github.com/AlexShan2008/review-copilot/actions"><img src="https://github.com/AlexShan2008/review-copilot/actions/workflows/ci.yml/badge.svg" alt="CI 状态"></a>
+  <img src="https://img.shields.io/badge/Status-Beta-orange.svg" alt="状态：Beta">
   <a href="https://codecov.io/gh/AlexShan2008/review-copilot"><img src="https://codecov.io/gh/AlexShan2008/review-copilot/branch/main/graph/badge.svg" alt="codecov"></a>
   <a href="https://www.npmjs.com/package/review-copilot"><img src="https://img.shields.io/npm/v/review-copilot.svg" alt="npm 版本"></a>
   <a href="https://www.npmjs.com/package/review-copilot"><img src="https://img.shields.io/npm/dt/review-copilot.svg" alt="总计下载量"></a>
@@ -66,7 +69,7 @@
 
 **🔧 易于集成**
 - GitHub Actions 就绪
-- GitLab CI（即将推出）
+- GitLab CI（测试版支持）
 - 基于环境的配置
 - 零配置设置
 
@@ -488,9 +491,9 @@ pnpm build
 
 ## 📊 项目状态
 
-> **当前状态**
+> **当前状态**：ReviewCopilot 目前处于 **测试版（Beta）** 阶段。核心审查流程已可用并有测试覆盖，但在正式发布 1.0 版本之前，仍可能引入破坏性变更。
 > - ✅ **GitHub 集成**：完全支持
-> - 🚧 **GitLab 集成**：开发中
+> - ⚠️ **GitLab 集成**：测试版（欢迎 PR！）
 > - ✅ **DeepSeek 提供商**：稳定
 > - ⚠️ **OpenAI 提供商**：测试版（欢迎 PR！）
 

@@ -10,8 +10,11 @@ English | [中文](README.zh-CN.md)
   <strong>AI-powered code review assistant for GitHub with customizable rules and multi-provider support</strong>
 </p>
 
+> **⚠️ Beta**: ReviewCopilot is under active development. APIs, configuration format, and provider behavior may change between minor versions. Please pin a specific version in production and report issues you run into.
+
 <p align="center">
   <a href="https://github.com/AlexShan2008/review-copilot/actions"><img src="https://github.com/AlexShan2008/review-copilot/actions/workflows/ci.yml/badge.svg" alt="CI Status"></a>
+  <img src="https://img.shields.io/badge/Status-Beta-orange.svg" alt="Status: Beta">
   <a href="https://codecov.io/gh/AlexShan2008/review-copilot"><img src="https://codecov.io/gh/AlexShan2008/review-copilot/branch/main/graph/badge.svg" alt="codecov"></a>
   <a href="https://www.npmjs.com/package/review-copilot"><img src="https://img.shields.io/npm/v/review-copilot.svg" alt="npm version"></a>
   <a href="https://www.npmjs.com/package/review-copilot"><img src="https://img.shields.io/npm/dt/review-copilot.svg" alt="Total Downloads"></a>
@@ -66,7 +69,7 @@ English | [中文](README.zh-CN.md)
 
 **🔧 Easy Integration**
 - GitHub Actions ready
-- GitLab CI (coming soon)
+- GitLab CI (beta support)
 - Environment-based config
 - Zero-config setup
 
@@ -488,9 +491,9 @@ Please read our [Contributing Guide](CONTRIBUTING.md) for detailed guidelines.
 
 ## 📊 Project Status
 
-> **Current Status**
+> **Current Status**: ReviewCopilot is in **Beta**. Core review flows are working and covered by tests, but breaking changes may still land before a stable 1.0 release.
 > - ✅ **GitHub integration**: Fully supported
-> - 🚧 **GitLab integration**: In development
+> - ⚠️ **GitLab integration**: Beta (PRs welcome!)
 > - ✅ **DeepSeek provider**: Stable
 > - ⚠️ **OpenAI provider**: Beta (PRs welcome!)
 
