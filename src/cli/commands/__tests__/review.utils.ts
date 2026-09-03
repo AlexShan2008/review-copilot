@@ -94,6 +94,7 @@ const originalImplementations = {
   ProviderFactoryCreateProvider: ProviderFactory.createProvider,
   getVcsProvider,
   GitPlatformFactoryCreateService: GitPlatformFactory.createService,
+  githubActionsEnv: process.env.GITHUB_ACTIONS,
 };
 
 // Cleanup function to restore original implementations
@@ -104,6 +105,11 @@ export const cleanupMocks = () => {
   (getVcsProvider as any) = originalImplementations.getVcsProvider;
   GitPlatformFactory.createService =
     originalImplementations.GitPlatformFactoryCreateService;
+  if (originalImplementations.githubActionsEnv === undefined) {
+    delete process.env.GITHUB_ACTIONS;
+  } else {
+    process.env.GITHUB_ACTIONS = originalImplementations.githubActionsEnv;
+  }
 };
 
 export const setupMocks = (
@@ -112,6 +118,12 @@ export const setupMocks = (
 ) => {
   // Clean up any existing mocks first
   cleanupMocks();
+
+  // reviewCommand only calls GitPlatformFactory/getPullRequestFiles when
+  // EnvironmentHelpers.isCI is true. Tests here assert that CI-only path
+  // runs, so force it deterministically instead of relying on the host's
+  // ambient GITHUB_ACTIONS env var (real in GitHub Actions, unset locally).
+  process.env.GITHUB_ACTIONS = 'true';
 
   const mockConfigManager = {
     loadConfig: jest.fn().mockResolvedValue(undefined),
